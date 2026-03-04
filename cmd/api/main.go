@@ -7,7 +7,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,12 +22,20 @@ import (
 	"github.com/comuline/api/internal/middleware"
 	"github.com/comuline/api/internal/scheduler"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
 	cfg := config.Load()
+	config.SetupLogging(cfg.Env)
+
+	if err := cfg.Validate(); err != nil {
+		slog.Error("configuration error", "error", err)
+		os.Exit(1)
+	}
+
 	db := database.Init(cfg)
 	c := cache.New(cfg.RedisURL)
 
@@ -37,15 +45,49 @@ func main() {
 
 	r := gin.Default()
 	r.Use(middleware.CORS())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.MetricsMiddleware())
 
 	// Root redirect → /docs
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
 	})
 
-	// Health check
-	r.GET("/status", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	// Health check with real dependency pings
+	r.GET("/status", func(gc *gin.Context) {
+		ctx, cancel := context.WithTimeout(gc.Request.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		status := http.StatusOK
+		result := gin.H{}
+
+		// Ping Postgres
+		sqlDB, err := db.DB()
+		if err != nil {
+			result["postgres"] = "error: " + err.Error()
+			status = http.StatusServiceUnavailable
+		} else if err := sqlDB.PingContext(ctx); err != nil {
+			result["postgres"] = "error: " + err.Error()
+			status = http.StatusServiceUnavailable
+		} else {
+			result["postgres"] = "ok"
+		}
+
+		// Ping Redis
+		if err := c.Client().Ping(ctx).Err(); err != nil {
+			result["redis"] = "error: " + err.Error()
+			status = http.StatusServiceUnavailable
+		} else {
+			result["redis"] = "ok"
+		}
+
+		if status == http.StatusOK {
+			result["status"] = "ok"
+		} else {
+			result["status"] = "degraded"
+		}
+
+		gc.JSON(status, result)
 	})
 
 	// Swagger UI
@@ -56,14 +98,21 @@ func main() {
 		c.File("./docs/swagger.json")
 	})
 
-	// Manual sync trigger
-	r.POST("/sync", func(c *gin.Context) {
+	// Prometheus metrics
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// Manual sync trigger (authenticated)
+	syncGroup := r.Group("/")
+	if cfg.SyncSecret != "" {
+		syncGroup.Use(middleware.RequireSyncSecret(cfg.SyncSecret))
+	}
+	syncGroup.POST("/sync", func(gc *gin.Context) {
 		go func() {
-			if err := scheduler.RunNow(cfg, db); err != nil {
-				log.Printf("manual sync error: %v", err)
+			if err := scheduler.RunNow(cfg, db, c); err != nil {
+				slog.Error("manual sync error", "error", err)
 			}
 		}()
-		c.JSON(http.StatusAccepted, gin.H{"message": "sync started"})
+		gc.JSON(http.StatusAccepted, gin.H{"message": "sync started"})
 	})
 
 	// API v1
@@ -92,7 +141,7 @@ func main() {
 	// Start background scheduler (stops when ctx is cancelled)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	scheduler.Start(ctx, cfg, db)
+	scheduler.Start(ctx, cfg, db, c)
 
 	// HTTP server with graceful shutdown
 	srv := &http.Server{
@@ -101,9 +150,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("starting Comuline API on :%s (env: %s)", cfg.Port, cfg.Env)
+		slog.Info("starting Comuline API", "port", cfg.Port, "env", cfg.Env)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server error: %v", err)
+			slog.Error("server error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -112,14 +162,15 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("shutting down server...")
+	slog.Info("shutting down server")
 	cancel() // stop scheduler
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("forced shutdown: %v", err)
+		slog.Error("forced shutdown", "error", err)
+		os.Exit(1)
 	}
-	log.Println("server stopped")
+	slog.Info("server stopped")
 }

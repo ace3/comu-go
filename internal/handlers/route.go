@@ -57,7 +57,9 @@ type RouteResponse struct {
 //	@Failure		500			{object}	response.Response
 //	@Router			/v1/route/{train_id} [get]
 func (h *RouteHandler) GetRoute(c *gin.Context) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
 	trainID := c.Param("train_id")
 	cacheKey := "route:" + trainID
 
@@ -68,7 +70,11 @@ func (h *RouteHandler) GetRoute(c *gin.Context) {
 	}
 
 	var schedules []models.Schedule
-	if err := h.db.Where("train_id = ?", trainID).Order("departs_at asc").Find(&schedules).Error; err != nil {
+	if err := h.db.WithContext(ctx).Where("train_id = ?", trainID).Order("departs_at asc").Find(&schedules).Error; err != nil {
+		if ctx.Err() != nil {
+			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+			return
+		}
 		response.BuildError(c, http.StatusInternalServerError, "failed to fetch route")
 		return
 	}

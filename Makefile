@@ -1,4 +1,4 @@
-.PHONY: build run sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help
+.PHONY: build run sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
 
 # Binary output path
 BIN := bin/api
@@ -69,3 +69,11 @@ clean:
 ## help: list available targets
 help:
 	@grep -E '^## ' Makefile | sed 's/## //'
+
+## migrate: run database migrations up
+migrate:
+	@go run -tags migrate ./cmd/migrate up
+
+## migrate-down: roll back all database migrations
+migrate-down:
+	@go run -tags migrate ./cmd/migrate down
