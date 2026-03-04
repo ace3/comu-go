@@ -11,11 +11,11 @@ import (
 )
 
 func main() {
-	syncType := flag.String("type", "", "sync type: station|schedule")
+	syncType := flag.String("type", "", "sync type: station|schedule|mrt-station|mrt-schedule|mrt")
 	flag.Parse()
 
 	if *syncType == "" {
-		slog.Error("--type is required (station|schedule)")
+		slog.Error("--type is required (station|schedule|mrt-station|mrt-schedule|mrt)")
 		os.Exit(1)
 	}
 
@@ -38,6 +38,25 @@ func main() {
 	case "schedule":
 		if err := syncer.SyncSchedules(cfg, db); err != nil {
 			slog.Error("schedule sync failed", "error", err)
+			os.Exit(1)
+		}
+	case "mrt-station":
+		if err := syncer.SyncMRTStations(db); err != nil {
+			slog.Error("MRT station sync failed", "error", err)
+			os.Exit(1)
+		}
+	case "mrt-schedule":
+		if err := syncer.SyncMRTSchedules(db); err != nil {
+			slog.Error("MRT schedule sync failed", "error", err)
+			os.Exit(1)
+		}
+	case "mrt":
+		if err := syncer.SyncMRTStations(db); err != nil {
+			slog.Error("MRT station sync failed", "error", err)
+			os.Exit(1)
+		}
+		if err := syncer.SyncMRTSchedules(db); err != nil {
+			slog.Error("MRT schedule sync failed", "error", err)
 			os.Exit(1)
 		}
 	default:

@@ -1,6 +1,6 @@
 # Comuline API
 
-Go port of [comuline/api](https://github.com/comuline/api) — Indonesian KRL Commuter Line schedule data, built with Gin + GORM.
+Go port of [comuline/api](https://github.com/comuline/api) — Indonesian KRL Commuter Line and MRT Jakarta schedule data, built with Gin + GORM.
 
 ## Requirements
 
@@ -90,24 +90,31 @@ The server starts on `http://localhost:8080`.
 | `GET` | `/v1/station/:id` | Get station by ID (e.g. `MRI`) |
 | `GET` | `/v1/schedule/:station_id` | Schedules for a station (supports `?page=1&limit=50`) |
 | `GET` | `/v1/route/:train_id` | Train route with stop sequence |
+| `GET` | `/v1/mrt/stations` | List all MRT stations |
+| `GET` | `/v1/mrt/stations/:id` | Get MRT station by ID (e.g. `LBB`) |
+| `GET` | `/v1/mrt/schedules/:station_id` | MRT schedules for a station |
+| `GET` | `/v1/mrt/routes` | MRT North-South Line route |
 
 ---
 
 ## Make targets
 
 ```bash
-make run            # start the API server
-make build          # compile to bin/api
-make sync           # run station + schedule sync
-make sync-station   # station sync only
-make sync-schedule  # schedule sync only
-make up             # start Docker services (postgres + redis)
-make down           # stop Docker services
-make swag           # regenerate Swagger docs
-make tidy           # go mod tidy + verify
-make clean          # remove build artifacts
-make migrate        # run database migrations up
-make migrate-down   # roll back all database migrations
+make run              # start the API server
+make build            # compile to bin/api
+make sync             # run all syncs (KRL + MRT)
+make sync-station     # KRL station sync only
+make sync-schedule    # KRL schedule sync only
+make sync-mrt         # MRT station + schedule sync
+make sync-mrt-station # MRT station sync only
+make sync-mrt-schedule # MRT schedule sync only
+make up               # start Docker services (postgres + redis)
+make down             # stop Docker services
+make swag             # regenerate Swagger docs
+make tidy             # go mod tidy + verify
+make clean            # remove build artifacts
+make migrate          # run database migrations up
+make migrate-down     # roll back all database migrations
 ```
 
 ---

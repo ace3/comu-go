@@ -41,6 +41,12 @@ func RunNow(cfg *config.Config, db *gorm.DB, c *cache.Cache) error {
 	if err := sync.SyncSchedules(cfg, db); err != nil {
 		return err
 	}
+	if err := sync.SyncMRTStations(db); err != nil {
+		return err
+	}
+	if err := sync.SyncMRTSchedules(db); err != nil {
+		return err
+	}
 
 	c.InvalidateAll(context.Background())
 	slog.Info("manual sync complete")
@@ -60,6 +66,14 @@ func run(cfg *config.Config, db *gorm.DB, c *cache.Cache) {
 	}
 	if err := sync.SyncSchedules(cfg, db); err != nil {
 		slog.Error("schedule sync failed", "error", err)
+		return
+	}
+	if err := sync.SyncMRTStations(db); err != nil {
+		slog.Error("MRT station sync failed", "error", err)
+		return
+	}
+	if err := sync.SyncMRTSchedules(db); err != nil {
+		slog.Error("MRT schedule sync failed", "error", err)
 		return
 	}
 

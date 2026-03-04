@@ -127,6 +127,15 @@ func main() {
 
 		routeH := handlers.NewRouteHandler(db, c)
 		v1.GET("/route/:train_id", routeH.GetRoute)
+
+		mrtH := handlers.NewMRTHandler(db, c)
+		mrt := v1.Group("/mrt")
+		{
+			mrt.GET("/stations", mrtH.GetMRTStations)
+			mrt.GET("/stations/:id", mrtH.GetMRTStation)
+			mrt.GET("/schedules/:station_id", mrtH.GetMRTSchedules)
+			mrt.GET("/routes", mrtH.GetMRTRoutes)
+		}
 	}
 
 	// Start background scheduler (stops when ctx is cancelled)

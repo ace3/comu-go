@@ -1,4 +1,4 @@
-.PHONY: build run sync-station sync-schedule sync up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
+.PHONY: build run sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
 
 # Binary output path
 BIN := bin/api
@@ -20,7 +20,18 @@ sync-schedule:
 	go run ./cmd/sync --type schedule
 
 ## sync: run both station and schedule sync in order
-sync: sync-station sync-schedule
+sync: sync-station sync-schedule sync-mrt
+
+## sync-mrt-station: fetch and upsert MRT stations
+sync-mrt-station:
+	go run ./cmd/sync --type mrt-station
+
+## sync-mrt-schedule: fetch and upsert MRT schedules
+sync-mrt-schedule:
+	go run ./cmd/sync --type mrt-schedule
+
+## sync-mrt: run MRT station and schedule sync
+sync-mrt: sync-mrt-station sync-mrt-schedule
 
 ## up: start PostgreSQL and Redis via Docker Compose
 up:
