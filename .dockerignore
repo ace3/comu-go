@@ -1,0 +1,5 @@
+.env
+bin/
+.git/
+*.md
+docs/swagger.json
