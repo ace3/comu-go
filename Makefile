@@ -1,11 +1,15 @@
 .PHONY: build run sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
 
-# Binary output path
-BIN := bin/api
+# Binary output paths
+BIN_DIR := bin
+API_BIN := $(BIN_DIR)/api
+SYNC_BIN := $(BIN_DIR)/sync
 
-## build: compile the API binary
+## build: compile API and sync binaries
 build:
-	go build -ldflags="-s -w" -o $(BIN) ./cmd/api
+	mkdir -p $(BIN_DIR)
+	go build -ldflags="-s -w" -o $(API_BIN) ./cmd/api
+	go build -ldflags="-s -w" -o $(SYNC_BIN) ./cmd/sync
 
 ## run: run the API server (with live .env)
 run:
