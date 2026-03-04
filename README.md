@@ -48,6 +48,7 @@ REDIS_URL=redis://localhost:6379
 COMULINE_ENV=development
 KAI_AUTH_TOKEN=<paste your token here>
 PORT=8080
+SYNC_SECRET=<optional secret for POST /sync endpoint>
 ```
 
 ### 4. Start PostgreSQL and Redis
@@ -80,12 +81,14 @@ The server starts on `http://localhost:8080`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/status` | Health check |
+| `GET` | `/status` | Health check (pings DB and Redis) |
 | `GET` | `/docs/index.html` | Swagger UI |
 | `GET` | `/openapi` | Raw OpenAPI JSON |
-| `GET` | `/v1/station` | List all stations |
+| `GET` | `/metrics` | Prometheus metrics |
+| `POST` | `/sync` | Trigger manual sync (requires `X-Sync-Secret` header) |
+| `GET` | `/v1/station` | List all stations (supports `?page=1&limit=50`) |
 | `GET` | `/v1/station/:id` | Get station by ID (e.g. `MRI`) |
-| `GET` | `/v1/schedule/:station_id` | Schedules for a station |
+| `GET` | `/v1/schedule/:station_id` | Schedules for a station (supports `?page=1&limit=50`) |
 | `GET` | `/v1/route/:train_id` | Train route with stop sequence |
 
 ---
@@ -103,6 +106,8 @@ make down           # stop Docker services
 make swag           # regenerate Swagger docs
 make tidy           # go mod tidy + verify
 make clean          # remove build artifacts
+make migrate        # run database migrations up
+make migrate-down   # roll back all database migrations
 ```
 
 ---
