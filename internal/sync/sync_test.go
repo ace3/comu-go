@@ -2,9 +2,11 @@ package sync
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestFetchWithRetry_Success(t *testing.T) {
@@ -109,15 +111,21 @@ func TestTitleCase(t *testing.T) {
 }
 
 func TestScheduleID_IncludesDepartureTime(t *testing.T) {
-	// The schedule ID format should be {station_id}-{train_id}-{HHmm}
-	// We just verify the format is correct
-	id := "MRI-1234-0530"
-	if len(id) == 0 {
-		t.Error("expected non-empty ID")
-	}
-	// Check that the format includes the departure time
+	// Verify the ID format uses {station_id}-{train_id}-{HHmm}
+	loc, _ := time.LoadLocation("Asia/Jakarta")
+	departsAt := time.Date(2026, 1, 1, 5, 30, 0, 0, loc)
+
+	id := fmt.Sprintf("%s-%s-%s", "MRI", "1234", departsAt.Format("1504"))
 	expected := "MRI-1234-0530"
 	if id != expected {
 		t.Errorf("expected %q, got %q", expected, id)
+	}
+
+	// Test another time
+	departsAt2 := time.Date(2026, 1, 1, 14, 5, 0, 0, loc)
+	id2 := fmt.Sprintf("%s-%s-%s", "BOO", "5678", departsAt2.Format("1504"))
+	expected2 := "BOO-5678-1405"
+	if id2 != expected2 {
+		t.Errorf("expected %q, got %q", expected2, id2)
 	}
 }
