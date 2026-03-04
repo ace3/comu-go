@@ -247,12 +247,10 @@ func TestMRTHandler_GetMRTSchedules(t *testing.T) {
 func TestMRTHandler_GetMRTRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db := setupTestDB(t)
-	seedMRTStations(t, db)
-	seedKRLStation(t, db)
 
 	handler := NewMRTHandler(db, nil)
 
-	t.Run("returns MRT route with stations", func(t *testing.T) {
+	t.Run("returns MRT route with stations in order", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("GET", "/v1/mrt/routes", nil)
@@ -275,8 +273,14 @@ func TestMRTHandler_GetMRTRoutes(t *testing.T) {
 		if routeResp.Color != "#DD0067" {
 			t.Errorf("color = %q, expected #DD0067", routeResp.Color)
 		}
-		if len(routeResp.Stops) != 3 {
-			t.Errorf("expected 3 stops, got %d", len(routeResp.Stops))
+		if len(routeResp.Stops) != 13 {
+			t.Errorf("expected 13 stops, got %d", len(routeResp.Stops))
+		}
+		if len(routeResp.Stops) > 0 && routeResp.Stops[0].StationID != "LBB" {
+			t.Errorf("first stop = %q, expected LBB", routeResp.Stops[0].StationID)
+		}
+		if len(routeResp.Stops) > 12 && routeResp.Stops[12].StationID != "BHI" {
+			t.Errorf("last stop = %q, expected BHI", routeResp.Stops[12].StationID)
 		}
 	})
 }

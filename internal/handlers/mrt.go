@@ -8,6 +8,7 @@ import (
 	"github.com/comuline/api/internal/cache"
 	"github.com/comuline/api/internal/models"
 	"github.com/comuline/api/internal/response"
+	syncer "github.com/comuline/api/internal/sync"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -146,14 +147,10 @@ func (h *MRTHandler) GetMRTRoutes(c *gin.Context) {
 		}
 	}
 
-	var stations []models.Station
-	if err := h.db.Where("type = ?", "MRT").Order("uid asc").Find(&stations).Error; err != nil {
-		response.BuildError(c, http.StatusInternalServerError, "failed to fetch MRT route")
-		return
-	}
-
-	stops := make([]MRTRouteStop, len(stations))
-	for i, s := range stations {
+	// Use the hardcoded station definitions to ensure correct ordering.
+	mrtStations := syncer.BuildMRTStations()
+	stops := make([]MRTRouteStop, len(mrtStations))
+	for i, s := range mrtStations {
 		stops[i] = MRTRouteStop{
 			StationID: s.ID,
 			Name:      s.Name,
