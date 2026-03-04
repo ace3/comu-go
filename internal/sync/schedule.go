@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -40,7 +40,7 @@ func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
 		return fmt.Errorf("loading stations: %w", err)
 	}
 
-	log.Printf("syncing schedules for %d stations in batches of 5...", len(stations))
+	slog.Info("syncing schedules", "stations", len(stations), "batch_size", 5)
 
 	batchSize := 5
 	for i := 0; i < len(stations); i += batchSize {
@@ -52,7 +52,7 @@ func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
 
 		for _, station := range batch {
 			if err := syncStationSchedules(cfg, db, station.ID); err != nil {
-				log.Printf("error syncing %s: %v", station.ID, err)
+				slog.Error("error syncing station schedule", "station_id", station.ID, "error", err)
 			}
 		}
 
@@ -61,7 +61,7 @@ func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
 		}
 	}
 
-	log.Println("schedule sync complete")
+	slog.Info("schedule sync complete")
 	return nil
 }
 
@@ -78,7 +78,7 @@ func syncStationSchedules(cfg *config.Config, db *gorm.DB, stationID string) err
 	setKRLHeaders(req, cfg.KAIAuthToken)
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := fetchWithRetry(client, req, 3)
 	if err != nil {
 		return fmt.Errorf("fetching schedule for %s: %w", stationID, err)
 	}
@@ -114,7 +114,7 @@ func syncStationSchedules(cfg *config.Config, db *gorm.DB, stationID string) err
 		})
 
 		schedules = append(schedules, models.Schedule{
-			ID:            fmt.Sprintf("%s-%s", stationID, s.TrainID),
+			ID:            fmt.Sprintf("%s-%s-%s", stationID, s.TrainID, departsAt.Format("1504")),
 			TrainID:       s.TrainID,
 			Line:          fixName(s.KaName),
 			Route:         s.RouteName,
@@ -139,7 +139,7 @@ func syncStationSchedules(cfg *config.Config, db *gorm.DB, stationID string) err
 		return fmt.Errorf("upserting schedules for %s: %w", stationID, result.Error)
 	}
 
-	log.Printf("synced %d schedules for station %s", len(schedules), stationID)
+	slog.Info("synced schedules for station", "count", len(schedules), "station_id", stationID)
 	return nil
 }
 

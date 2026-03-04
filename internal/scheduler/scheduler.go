@@ -2,9 +2,11 @@ package scheduler
 
 import (
 	"context"
-	"log"
+	"errors"
+	"log/slog"
 	"time"
 
+	"github.com/comuline/api/internal/cache"
 	"github.com/comuline/api/internal/config"
 	"github.com/comuline/api/internal/sync"
 	"gorm.io/gorm"
@@ -12,17 +14,17 @@ import (
 
 // Start launches a background goroutine that runs a full sync every day at
 // 00:10 WIB (Asia/Jakarta). It stops cleanly when ctx is cancelled.
-func Start(ctx context.Context, cfg *config.Config, db *gorm.DB) {
+func Start(ctx context.Context, cfg *config.Config, db *gorm.DB, c *cache.Cache) {
 	go func() {
 		for {
 			next := nextRunTime()
-			log.Printf("[scheduler] next auto-sync at %s", next.Format("2006-01-02 15:04:05 MST"))
+			slog.Info("next auto-sync scheduled", "time", next.Format("2006-01-02 15:04:05 MST"))
 
 			select {
 			case <-time.After(time.Until(next)):
-				run(cfg, db)
+				run(cfg, db, c)
 			case <-ctx.Done():
-				log.Println("[scheduler] stopped")
+				slog.Info("scheduler stopped")
 				return
 			}
 		}
@@ -30,8 +32,8 @@ func Start(ctx context.Context, cfg *config.Config, db *gorm.DB) {
 }
 
 // RunNow executes a full sync immediately (used by the manual trigger endpoint).
-func RunNow(cfg *config.Config, db *gorm.DB) error {
-	log.Println("[scheduler] manual sync triggered")
+func RunNow(cfg *config.Config, db *gorm.DB, c *cache.Cache) error {
+	slog.Info("manual sync triggered")
 
 	if err := sync.SyncStations(cfg, db); err != nil {
 		return err
@@ -46,31 +48,37 @@ func RunNow(cfg *config.Config, db *gorm.DB) error {
 		return err
 	}
 
-	log.Println("[scheduler] manual sync complete")
+	c.InvalidateAll(context.Background())
+	slog.Info("manual sync complete")
 	return nil
 }
 
-func run(cfg *config.Config, db *gorm.DB) {
-	log.Println("[scheduler] starting auto-sync...")
+func run(cfg *config.Config, db *gorm.DB, c *cache.Cache) {
+	slog.Info("starting auto-sync")
 
 	if err := sync.SyncStations(cfg, db); err != nil {
-		log.Printf("[scheduler] station sync failed: %v", err)
+		slog.Error("station sync failed", "error", err)
+		if errors.Is(err, sync.ErrTokenExpired) {
+			slog.Warn("skipping schedule sync due to expired token")
+			return
+		}
 		return
 	}
 	if err := sync.SyncSchedules(cfg, db); err != nil {
-		log.Printf("[scheduler] schedule sync failed: %v", err)
+		slog.Error("schedule sync failed", "error", err)
 		return
 	}
 	if err := sync.SyncMRTStations(db); err != nil {
-		log.Printf("[scheduler] MRT station sync failed: %v", err)
+		slog.Error("MRT station sync failed", "error", err)
 		return
 	}
 	if err := sync.SyncMRTSchedules(db); err != nil {
-		log.Printf("[scheduler] MRT schedule sync failed: %v", err)
+		slog.Error("MRT schedule sync failed", "error", err)
 		return
 	}
 
-	log.Println("[scheduler] auto-sync complete")
+	c.InvalidateAll(context.Background())
+	slog.Info("auto-sync complete")
 }
 
 // nextRunTime returns the next 00:10 WIB timestamp after now.

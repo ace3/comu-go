@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -20,6 +21,11 @@ func New(redisURL string) *Cache {
 		opt = &redis.Options{Addr: "localhost:6379"}
 	}
 	return &Cache{client: redis.NewClient(opt)}
+}
+
+// Client returns the underlying Redis client for health checks and direct access.
+func (c *Cache) Client() *redis.Client {
+	return c.client
 }
 
 // TTLToMidnight returns the duration from now until midnight WIB (GMT+7).
@@ -51,4 +57,36 @@ func (c *Cache) Set(ctx context.Context, key string, value any, ttl time.Duratio
 // IsNil reports whether err is a Redis cache miss.
 func (c *Cache) IsNil(err error) bool {
 	return err == redis.Nil
+}
+
+// InvalidateAll deletes all cached keys matching station:*, schedule:*, and route:*
+// using SCAN + DEL. Returns the number of keys deleted.
+func (c *Cache) InvalidateAll(ctx context.Context) int {
+	patterns := []string{"station:*", "schedule:*", "route:*"}
+	total := 0
+
+	for _, pattern := range patterns {
+		var cursor uint64
+		for {
+			keys, nextCursor, err := c.client.Scan(ctx, cursor, pattern, 100).Result()
+			if err != nil {
+				slog.Error("cache scan error", "pattern", pattern, "error", err)
+				break
+			}
+			if len(keys) > 0 {
+				if err := c.client.Del(ctx, keys...).Err(); err != nil {
+					slog.Error("cache delete error", "error", err)
+				} else {
+					total += len(keys)
+				}
+			}
+			cursor = nextCursor
+			if cursor == 0 {
+				break
+			}
+		}
+	}
+
+	slog.Info("cache invalidated", "keys", total)
+	return total
 }
