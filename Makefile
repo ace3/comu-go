@@ -1,4 +1,4 @@
-.PHONY: build run sync-station sync-schedule sync up down swag tidy clean help
+.PHONY: build run sync-station sync-schedule sync up down prod-up prod-down prod-logs swag tidy clean help
 
 # Binary output path
 BIN := bin/api
@@ -29,6 +29,18 @@ up:
 ## down: stop Docker Compose services
 down:
 	docker compose down
+
+## prod-up: build and start all production services (app + postgres + redis)
+prod-up:
+	docker compose -f docker-compose.prod.yml up -d --build
+
+## prod-down: stop production services (data is preserved)
+prod-down:
+	docker compose -f docker-compose.prod.yml down
+
+## prod-logs: follow logs from all production services
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f
 
 ## swag: regenerate Swagger docs (requires swag: go install github.com/swaggo/swag/cmd/swag@latest)
 swag:
