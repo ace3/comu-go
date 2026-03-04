@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -74,7 +75,7 @@ func TestValidate_AllMissing(t *testing.T) {
 
 	errMsg := err.Error()
 	for _, v := range []string{"DATABASE_URL", "REDIS_URL", "KAI_AUTH_TOKEN"} {
-		if !containsString(errMsg, v) {
+		if !strings.Contains(errMsg, v) {
 			t.Errorf("expected error to mention %s, got: %s", v, errMsg)
 		}
 	}
@@ -91,26 +92,13 @@ func TestValidate_PartialMissing(t *testing.T) {
 	}
 
 	errMsg := err.Error()
-	if containsString(errMsg, "DATABASE_URL") {
+	if strings.Contains(errMsg, "DATABASE_URL") {
 		t.Errorf("DATABASE_URL is set, should not be in error: %s", errMsg)
 	}
-	if !containsString(errMsg, "REDIS_URL") {
+	if !strings.Contains(errMsg, "REDIS_URL") {
 		t.Errorf("expected error to mention REDIS_URL, got: %s", errMsg)
 	}
-	if !containsString(errMsg, "KAI_AUTH_TOKEN") {
+	if !strings.Contains(errMsg, "KAI_AUTH_TOKEN") {
 		t.Errorf("expected error to mention KAI_AUTH_TOKEN, got: %s", errMsg)
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
-}
-
-func containsSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
