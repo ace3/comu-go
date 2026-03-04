@@ -39,6 +39,12 @@ func RunNow(cfg *config.Config, db *gorm.DB) error {
 	if err := sync.SyncSchedules(cfg, db); err != nil {
 		return err
 	}
+	if err := sync.SyncMRTStations(db); err != nil {
+		return err
+	}
+	if err := sync.SyncMRTSchedules(db); err != nil {
+		return err
+	}
 
 	log.Println("[scheduler] manual sync complete")
 	return nil
@@ -53,6 +59,14 @@ func run(cfg *config.Config, db *gorm.DB) {
 	}
 	if err := sync.SyncSchedules(cfg, db); err != nil {
 		log.Printf("[scheduler] schedule sync failed: %v", err)
+		return
+	}
+	if err := sync.SyncMRTStations(db); err != nil {
+		log.Printf("[scheduler] MRT station sync failed: %v", err)
+		return
+	}
+	if err := sync.SyncMRTSchedules(db); err != nil {
+		log.Printf("[scheduler] MRT schedule sync failed: %v", err)
 		return
 	}
 
