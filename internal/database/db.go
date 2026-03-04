@@ -2,15 +2,18 @@ package database
 
 import (
 	"log/slog"
+	"net"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/comuline/api/internal/config"
 	"github.com/comuline/api/internal/models"
+	migrations "github.com/comuline/api/migrations"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	migrations "github.com/comuline/api/migrations"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -60,7 +63,7 @@ func RunMigrations(databaseURL string) {
 		os.Exit(1)
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", source, databaseURL)
+	m, err := migrate.NewWithSourceInstance("iofs", source, normalizeDatabaseURLForMigrate(databaseURL))
 	if err != nil {
 		slog.Error("failed to create migrate instance", "error", err)
 		os.Exit(1)
@@ -82,7 +85,7 @@ func RunMigrationsDown(databaseURL string) {
 		os.Exit(1)
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", source, databaseURL)
+	m, err := migrate.NewWithSourceInstance("iofs", source, normalizeDatabaseURLForMigrate(databaseURL))
 	if err != nil {
 		slog.Error("failed to create migrate instance", "error", err)
 		os.Exit(1)
@@ -94,4 +97,40 @@ func RunMigrationsDown(databaseURL string) {
 	}
 
 	slog.Info("database migrations rolled back successfully")
+}
+
+// normalizeDatabaseURLForMigrate ensures local PostgreSQL URLs work with lib/pq defaults.
+// lib/pq defaults sslmode=require when omitted, which fails against local dev servers
+// that commonly run without TLS.
+func normalizeDatabaseURLForMigrate(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	query := parsed.Query()
+	if query.Get("sslmode") != "" {
+		return raw
+	}
+
+	host := parsed.Hostname()
+	if !isLocalDBHost(host) {
+		return raw
+	}
+
+	query.Set("sslmode", "disable")
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
+func isLocalDBHost(host string) bool {
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
