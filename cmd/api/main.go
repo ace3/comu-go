@@ -6,8 +6,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	_ "github.com/comuline/api/docs"
 	"github.com/comuline/api/internal/cache"
@@ -15,6 +20,7 @@ import (
 	"github.com/comuline/api/internal/database"
 	"github.com/comuline/api/internal/handlers"
 	"github.com/comuline/api/internal/middleware"
+	"github.com/comuline/api/internal/scheduler"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -50,6 +56,16 @@ func main() {
 		c.File("./docs/swagger.json")
 	})
 
+	// Manual sync trigger
+	r.POST("/sync", func(c *gin.Context) {
+		go func() {
+			if err := scheduler.RunNow(cfg, db); err != nil {
+				log.Printf("manual sync error: %v", err)
+			}
+		}()
+		c.JSON(http.StatusAccepted, gin.H{"message": "sync started"})
+	})
+
 	// API v1
 	v1 := r.Group("/v1")
 	{
@@ -64,8 +80,37 @@ func main() {
 		v1.GET("/route/:train_id", routeH.GetRoute)
 	}
 
-	log.Printf("starting Comuline API on :%s (env: %s)", cfg.Port, cfg.Env)
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("server error: %v", err)
+	// Start background scheduler (stops when ctx is cancelled)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	scheduler.Start(ctx, cfg, db)
+
+	// HTTP server with graceful shutdown
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("starting Comuline API on :%s (env: %s)", cfg.Port, cfg.Env)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	// Wait for SIGINT or SIGTERM
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("shutting down server...")
+	cancel() // stop scheduler
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("forced shutdown: %v", err)
+	}
+	log.Println("server stopped")
 }
