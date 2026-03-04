@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/comuline/api/internal/cache"
 	"github.com/comuline/api/internal/models"
@@ -29,25 +30,48 @@ func NewScheduleHandler(db *gorm.DB, c *cache.Cache) *ScheduleHandler {
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			station_id	path		string	true	"Station ID"
-//	@Success		200			{object}	response.Response{data=[]models.Schedule}
+//	@Param			page		query		int		false	"Page number (default 1)"
+//	@Param			limit		query		int		false	"Results per page (default 100, max 500)"
+//	@Success		200			{object}	response.PaginatedResponse{data=[]models.Schedule}
 //	@Failure		500			{object}	response.Response
+//	@Failure		503			{object}	response.Response
 //	@Router			/v1/schedule/{station_id} [get]
 func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
-	ctx := context.Background()
-	stationID := c.Param("station_id")
-	cacheKey := "schedule:" + stationID
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
 
-	var schedules []models.Schedule
-	if err := h.cache.Get(ctx, cacheKey, &schedules); err == nil {
-		response.BuildSuccess(c, schedules)
+	stationID := c.Param("station_id")
+	page, limit := parsePagination(c)
+	cacheKey := paginationCacheKey("schedule:"+stationID, page, limit)
+
+	var cached response.PaginatedResponse
+	if err := h.cache.Get(ctx, cacheKey, &cached); err == nil {
+		c.JSON(http.StatusOK, cached)
 		return
 	}
 
-	if err := h.db.Where("station_id = ?", stationID).Order("departs_at asc").Find(&schedules).Error; err != nil {
+	var total int64
+	if err := h.db.WithContext(ctx).Model(&models.Schedule{}).Where("station_id = ?", stationID).Count(&total).Error; err != nil {
+		if ctx.Err() != nil {
+			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+			return
+		}
+		response.BuildError(c, http.StatusInternalServerError, "failed to count schedules")
+		return
+	}
+
+	var schedules []models.Schedule
+	offset := (page - 1) * limit
+	if err := h.db.WithContext(ctx).Where("station_id = ?", stationID).Order("departs_at asc").Offset(offset).Limit(limit).Find(&schedules).Error; err != nil {
+		if ctx.Err() != nil {
+			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+			return
+		}
 		response.BuildError(c, http.StatusInternalServerError, "failed to fetch schedules")
 		return
 	}
 
-	_ = h.cache.Set(ctx, cacheKey, schedules, cache.TTLToMidnight())
-	response.BuildSuccess(c, schedules)
+	resp := response.BuildPaginatedSuccess(schedules, page, limit, int(total))
+	_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
+	c.JSON(http.StatusOK, resp)
 }

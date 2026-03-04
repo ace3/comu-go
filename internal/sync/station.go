@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/comuline/api/internal/config"
 	"github.com/comuline/api/internal/models"
@@ -53,7 +54,7 @@ var hardcodedStations = []models.Station{
 
 // SyncStations fetches stations from the KRL API and upserts them into the database.
 func SyncStations(cfg *config.Config, db *gorm.DB) error {
-	log.Println("fetching stations from KRL API...")
+	slog.Info("fetching stations from KRL API")
 
 	req, err := http.NewRequest("GET", "https://api-partner.krl.co.id/krl-webs/v1/krl-station", nil)
 	if err != nil {
@@ -61,8 +62,8 @@ func SyncStations(cfg *config.Config, db *gorm.DB) error {
 	}
 	setKRLHeaders(req, cfg.KAIAuthToken)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := fetchWithRetry(client, req, 3)
 	if err != nil {
 		return fmt.Errorf("fetching stations: %w", err)
 	}
@@ -101,14 +102,14 @@ func SyncStations(cfg *config.Config, db *gorm.DB) error {
 
 	stations = append(stations, hardcodedStations...)
 
-	log.Printf("upserting %d stations...", len(stations))
+	slog.Info("upserting stations", "count", len(stations))
 	for i := range stations {
 		if err := db.Save(&stations[i]).Error; err != nil {
-			log.Printf("error saving station %s: %v", stations[i].ID, err)
+			slog.Error("error saving station", "station_id", stations[i].ID, "error", err)
 		}
 	}
 
-	log.Printf("station sync complete: %d stations processed", len(stations))
+	slog.Info("station sync complete", "count", len(stations))
 	return nil
 }
 
