@@ -2,7 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/comuline/api/internal/config"
 	"github.com/comuline/api/internal/database"
@@ -14,24 +15,35 @@ func main() {
 	flag.Parse()
 
 	if *syncType == "" {
-		log.Fatal("--type is required (station|schedule)")
+		slog.Error("--type is required (station|schedule)")
+		os.Exit(1)
 	}
 
 	cfg := config.Load()
+	config.SetupLogging(cfg.Env)
+
+	if err := cfg.Validate(); err != nil {
+		slog.Error("configuration error", "error", err)
+		os.Exit(1)
+	}
+
 	db := database.Init(cfg)
 
 	switch *syncType {
 	case "station":
 		if err := syncer.SyncStations(cfg, db); err != nil {
-			log.Fatalf("station sync failed: %v", err)
+			slog.Error("station sync failed", "error", err)
+			os.Exit(1)
 		}
 	case "schedule":
 		if err := syncer.SyncSchedules(cfg, db); err != nil {
-			log.Fatalf("schedule sync failed: %v", err)
+			slog.Error("schedule sync failed", "error", err)
+			os.Exit(1)
 		}
 	default:
-		log.Fatalf("unknown sync type %q — use station or schedule", *syncType)
+		slog.Error("unknown sync type", "type", *syncType)
+		os.Exit(1)
 	}
 
-	log.Println("sync completed successfully")
+	slog.Info("sync completed successfully")
 }
