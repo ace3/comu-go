@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -84,7 +85,7 @@ func TestBuildMRTStations(t *testing.T) {
 				t.Errorf("station %s has empty metadata", s.ID)
 				continue
 			}
-			if !contains(metadata, "#DD0067") {
+			if !strings.Contains(metadata, "#DD0067") {
 				t.Errorf("station %s metadata missing MRT color #DD0067: %s", s.ID, metadata)
 			}
 		}
@@ -99,17 +100,4 @@ func TestMRTStationDefinitions(t *testing.T) {
 			}
 		}
 	})
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstring(s, substr))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
