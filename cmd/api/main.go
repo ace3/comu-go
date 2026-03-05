@@ -37,6 +37,9 @@ func main() {
 
 	db := database.Init(cfg)
 	c := cache.New(cfg.RedisURL)
+	if err := ensureInitialStationData(cfg, db, c, scheduler.RunNow); err != nil {
+		slog.Error("initial station sync failed", "error", err)
+	}
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
