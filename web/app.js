@@ -21,6 +21,7 @@ const windowLabel = document.getElementById("window-label");
 const cardsNode = document.getElementById("cards");
 const planFrom = document.getElementById("plan-from");
 const planTo = document.getElementById("plan-to");
+const planShowAll = document.getElementById("plan-show-all");
 const planButton = document.getElementById("plan-trip");
 const planStatusNode = document.getElementById("plan-status");
 const planResultsNode = document.getElementById("plan-results");
@@ -412,12 +413,36 @@ async function generateTripPlan() {
   }
 }
 
+function getPlannerStations() {
+  const useAllStations = Boolean(planShowAll && planShowAll.checked);
+  if (useAllStations) {
+    return stations;
+  }
+
+  const preferredSet = new Set(preferredStations);
+  const filtered = stations.filter((station) => preferredSet.has(station.id));
+  if (filtered.length > 0) {
+    return filtered;
+  }
+  return stations;
+}
+
 function populateTripPlannerOptions() {
-  const options = stations
+  const currentFrom = String(planFrom.value || "").toUpperCase();
+  const currentTo = String(planTo.value || "").toUpperCase();
+  const plannerStations = getPlannerStations();
+  const options = plannerStations
     .map((station) => `<option value="${station.id}">${station.name} (${station.id})</option>`)
     .join("");
   planFrom.innerHTML = `<option value="">Select origin</option>${options}`;
   planTo.innerHTML = `<option value="">Select destination</option>${options}`;
+
+  if (plannerStations.some((station) => station.id === currentFrom)) {
+    planFrom.value = currentFrom;
+  }
+  if (plannerStations.some((station) => station.id === currentTo)) {
+    planTo.value = currentTo;
+  }
 }
 
 function renderSchedules(data) {
@@ -519,10 +544,12 @@ async function init() {
 
   stationSearch.addEventListener("input", renderStationPicker);
   planButton.addEventListener("click", generateTripPlan);
+  planShowAll.addEventListener("change", populateTripPlannerOptions);
 
   saveButton.addEventListener("click", async () => {
     savePreferredStations(Array.from(selectedSet));
     selectedSet = new Set(preferredStations);
+    populateTripPlannerOptions();
     setView("schedule");
     await loadWindowSchedules();
   });
