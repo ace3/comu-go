@@ -415,34 +415,48 @@ function renderTripPlans(options) {
   planResultsNode.innerHTML = "";
   for (const option of options) {
     const card = document.createElement("article");
-    card.className = "rounded-xl border border-slate-200 bg-white p-3";
+    const isTransit = option.legs.length > 1;
+    card.className = isTransit
+      ? "rounded-xl border border-amber-200 border-l-2 border-l-amber-400 bg-white p-3"
+      : "rounded-xl border border-emerald-200 border-l-2 border-l-emerald-500 bg-white p-3";
 
     const head = document.createElement("div");
-    head.className = "flex items-center justify-between gap-2";
+    head.className = "flex items-start justify-between gap-2";
+
     const mode = document.createElement("span");
     const transitCount = Math.max(0, option.legs.length - 1);
-    mode.className =
-      transitCount === 0
-        ? "rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700"
-        : "rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700";
+    mode.className = transitCount === 0
+      ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700"
+      : "rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700";
     mode.textContent = transitCount === 0 ? "Direct" : `${transitCount} Transit`;
+
+    const headRight = document.createElement("div");
+    headRight.className = "text-right";
     const timing = document.createElement("div");
     timing.className = "text-sm font-bold text-slate-900";
     timing.textContent = `${formatWIBTime(option.departAt.toISOString())} → ${formatWIBTime(option.arriveAt.toISOString())}`;
+    const duration = document.createElement("div");
+    duration.className = "mt-0.5 text-xs text-slate-500";
+    duration.textContent = `Duration ${option.durationMinutes} min`;
+    headRight.appendChild(timing);
+    headRight.appendChild(duration);
+
     head.appendChild(mode);
-    head.appendChild(timing);
-
-    const meta = document.createElement("div");
-    meta.className = "mt-1 text-xs text-slate-600";
-    meta.textContent = `Duration ${option.durationMinutes} min`;
-
+    head.appendChild(headRight);
     card.appendChild(head);
-    card.appendChild(meta);
 
     const legs = document.createElement("div");
-    legs.className = "mt-2 grid gap-2 text-sm text-slate-700";
+    legs.className = "mt-3 grid gap-2 text-sm text-slate-700";
+
     for (let i = 0; i < option.legs.length; i++) {
       const leg = option.legs[i];
+
+      if (i > 0) {
+        const divider = document.createElement("div");
+        divider.className = "border-t border-dashed border-slate-100";
+        legs.appendChild(divider);
+      }
+
       const legNode = document.createElement("div");
       legNode.className = "font-medium text-slate-800";
       legNode.textContent = `${leg.trainId} | ${leg.line} | ${stationNameOnly(leg.from)} → ${stationNameOnly(leg.to)}`;
@@ -471,10 +485,72 @@ function renderTripPlans(options) {
           stationNameOnly,
         );
         legs.appendChild(transfer);
+
+        // Alternate departure — hidden by default, revealed on demand
+        const capturedLeg = leg;
+        const capturedNextLeg = nextLeg;
+
+        const altWrap = document.createElement("details");
+        altWrap.className = "mt-0.5";
+
+        const altSummary = document.createElement("summary");
+        altSummary.className = "cursor-pointer list-none select-none text-xs text-slate-400 transition-colors hover:text-slate-600";
+        altSummary.textContent = "↪ Missed connection?";
+        altWrap.appendChild(altSummary);
+
+        const altContent = document.createElement("div");
+        altContent.className = "mt-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-500";
+        altContent.textContent = "Loading…";
+
+        let altLoaded = false;
+        altWrap.addEventListener("toggle", async () => {
+          altSummary.textContent = altWrap.open ? "↩ Hide alternate" : "↪ Missed connection?";
+          if (!altWrap.open || altLoaded) return;
+          altLoaded = true;
+          try {
+            const schedules = await fetchStationSchedules(capturedNextLeg.from);
+            const connSchedule = schedules.find((s) => s.train_id === capturedNextLeg.trainId);
+            const connRoute = connSchedule ? String(connSchedule.route || "") : "";
+            const candidates = schedules
+              .filter((s) => {
+                const dep = new Date(s.departs_at);
+                if (s.line !== capturedNextLeg.line || dep <= capturedNextLeg.departAt) return false;
+                return connRoute ? String(s.route || "") === connRoute : true;
+              })
+              .sort((a, b) => new Date(a.departs_at) - new Date(b.departs_at));
+            const next = candidates[0];
+            if (next) {
+              const depTime = formatWIBTime(next.departs_at);
+              const extraWait = diffMinutes(capturedLeg.arriveAt, new Date(next.departs_at));
+              altContent.innerHTML = "";
+              const timeEl = document.createElement("span");
+              timeEl.className = "font-semibold text-slate-700";
+              timeEl.textContent = depTime;
+              const sep = document.createElement("span");
+              sep.className = "mx-1.5 text-slate-300";
+              sep.textContent = "·";
+              const trainEl = document.createElement("span");
+              trainEl.textContent = `${next.train_id} | ${next.line}`;
+              const badge = document.createElement("span");
+              badge.className = "ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 font-semibold text-slate-600";
+              badge.textContent = `+${extraWait} min wait`;
+              altContent.appendChild(timeEl);
+              altContent.appendChild(sep);
+              altContent.appendChild(trainEl);
+              altContent.appendChild(badge);
+            } else {
+              altContent.textContent = "No alternate train found in schedule.";
+            }
+          } catch (_) {
+            altContent.textContent = "Could not load alternate schedule.";
+          }
+        });
+
+        altWrap.appendChild(altContent);
+        legs.appendChild(altWrap);
       }
     }
     card.appendChild(legs);
-
     planResultsNode.appendChild(card);
   }
 }
