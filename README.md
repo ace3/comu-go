@@ -25,7 +25,7 @@ go mod download
 
 The token is extracted from the official KCI website:
 
-1. Open **https://kci.id/perjalanan-krl** in your browser
+1. Open **https://kci.id/perjalanan-krl/jadwal-kereta** in your browser
 2. Open **Developer Tools** (`F12` or `Cmd+Option+I` on Mac)
 3. Go to the **Network** tab
 4. **Reload the page** (`F5` or `Cmd+R`) to capture requests

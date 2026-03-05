@@ -344,7 +344,7 @@ curl -X POST https://your-domain/sync \
 
 The KCI token expires periodically. To refresh:
 
-1. Extract a new token from [kci.id](https://kci.id/perjalanan-krl) (see [README](README.md#2-get-your-kai_auth_token))
+1. Extract a new token from [kci.id](https://kci.id/perjalanan-krl/jadwal-kereta) (see [README](README.md#2-get-your-kai_auth_token))
 2. Update it in `.env` (VPS) or as a secret (Fly.io / Render)
 3. Restart the service — no rebuild needed
 4. Trigger a manual sync to repopulate data
