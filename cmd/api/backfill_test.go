@@ -104,4 +104,20 @@ func TestBackfillFromDataIfEmpty(t *testing.T) {
 			t.Fatalf("counts changed unexpectedly, stations=%d schedules=%d", stationCount, scheduleCount)
 		}
 	})
+
+	t.Run("does not fail when backfill files are missing", func(t *testing.T) {
+		db := setupBackfillTestDB(t)
+		missingDir := filepath.Join(dir, "missing")
+		if err := backfillFromDataIfEmpty(db, missingDir); err != nil {
+			t.Fatalf("backfillFromDataIfEmpty() should ignore missing files, got error = %v", err)
+		}
+
+		var stationCount int64
+		var scheduleCount int64
+		_ = db.Model(&models.Station{}).Count(&stationCount)
+		_ = db.Model(&models.Schedule{}).Count(&scheduleCount)
+		if stationCount != 0 || scheduleCount != 0 {
+			t.Fatalf("expected empty tables, got stations=%d schedules=%d", stationCount, scheduleCount)
+		}
+	})
 }

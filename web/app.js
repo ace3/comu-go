@@ -89,12 +89,12 @@ function savePreferredStations(stationIDs) {
 
 function showStatus(message, isError = false) {
   statusNode.textContent = message;
-  statusNode.classList.toggle("error", isError);
+  statusNode.className = isError ? "mb-1 min-h-5 text-sm text-rose-600" : "mb-1 min-h-5 text-sm text-slate-600";
 }
 
 function showPickerStatus(message, isError = false) {
   pickerStatusNode.textContent = message;
-  pickerStatusNode.classList.toggle("error", isError);
+  pickerStatusNode.className = isError ? "mb-3 mt-2 min-h-5 text-sm text-rose-600" : "mb-3 mt-2 min-h-5 text-sm text-slate-600";
 }
 
 async function fetchWithTimeout(url, timeoutMs = 10000) {
@@ -139,7 +139,7 @@ function updateSelectionCount() {
 
 function renderStationPicker() {
   if (stations.length === 0) {
-    stationList.innerHTML = '<p class="hint">No station data available yet. Run station sync first.</p>';
+    stationList.innerHTML = '<p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">No station data available yet. Run station sync first.</p>';
     saveButton.disabled = true;
     return;
   }
@@ -155,19 +155,21 @@ function renderStationPicker() {
   });
 
   if (filtered.length === 0) {
-    stationList.innerHTML = '<p class="hint">No station matches your search.</p>';
+    stationList.innerHTML = '<p class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">No station matches your search.</p>';
     return;
   }
 
   for (const station of filtered) {
     const wrapper = document.createElement("div");
-    wrapper.className = "station-item";
+    wrapper.className = "rounded-xl border border-slate-200 bg-white p-3 transition hover:border-cyan-300 hover:bg-cyan-50/40";
 
     const label = document.createElement("label");
+    label.className = "flex min-h-11 cursor-pointer items-center gap-3";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = station.id;
     checkbox.checked = selectedSet.has(station.id);
+    checkbox.className = "h-5 w-5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-400";
 
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) {
@@ -184,11 +186,12 @@ function renderStationPicker() {
     });
 
     const textWrap = document.createElement("div");
+    textWrap.className = "min-w-0";
     const name = document.createElement("div");
-    name.className = "station-name";
+    name.className = "truncate text-sm font-semibold text-slate-800";
     name.textContent = station.name;
     const id = document.createElement("div");
-    id.className = "station-id";
+    id.className = "text-xs font-medium tracking-wide text-slate-500";
     id.textContent = station.id;
 
     textWrap.appendChild(name);
@@ -226,31 +229,33 @@ function renderSchedules(data) {
 
   for (const station of data.stations || []) {
     const card = document.createElement("article");
-    card.className = "card";
+    card.className = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
 
     const title = document.createElement("h3");
+    title.className = "text-base font-bold tracking-tight text-slate-900";
     title.textContent = stationDisplayName(station.station_id);
     card.appendChild(title);
 
     const list = document.createElement("ul");
-    list.className = "schedule-list";
+    list.className = "mt-2 grid gap-2";
 
     const schedules = Array.isArray(station.schedules) ? station.schedules : [];
     if (schedules.length === 0) {
       const empty = document.createElement("p");
-      empty.className = "hint";
+      empty.className = "mt-2 text-sm text-slate-600";
       empty.textContent = "No departures in +/- 1 hour (WIB).";
       card.appendChild(empty);
     } else {
       for (const schedule of schedules) {
         const item = document.createElement("li");
+        item.className = "rounded-xl border border-slate-100 bg-slate-50 px-3 py-2";
 
         const time = document.createElement("div");
-        time.className = "schedule-time";
+        time.className = "text-base font-extrabold text-cyan-700";
         time.textContent = formatWIBTime(schedule.departs_at);
 
         const meta = document.createElement("div");
-        meta.className = "schedule-meta";
+        meta.className = "mt-0.5 text-xs text-slate-600 sm:text-sm";
         meta.textContent = `${schedule.train_id} | ${schedule.line} | ${schedule.origin_id} -> ${schedule.destination_id}`;
 
         item.appendChild(time);

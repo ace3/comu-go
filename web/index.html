@@ -3,35 +3,108 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Comu Schedules</title>
-    <link rel="stylesheet" href="/app/assets/app.css" />
+    <title>Comu Schedule</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+            boxShadow: {
+              soft: "0 8px 32px rgba(14, 116, 144, 0.10)",
+            },
+            colors: {
+              brand: {
+                50: "#ecfeff",
+                100: "#cffafe",
+                500: "#06b6d4",
+                600: "#0891b2",
+                700: "#0e7490",
+              },
+            },
+          },
+        },
+      };
+    </script>
   </head>
-  <body>
-    <main class="app">
-      <header class="topbar">
-        <h1>Comu Schedule</h1>
-        <p>WIB ±1 hour for your preferred stations.</p>
+  <body class="min-h-dvh bg-gradient-to-b from-cyan-50 via-slate-50 to-white text-slate-900 antialiased">
+    <div
+      class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.16),transparent_48%),radial-gradient(circle_at_20%_80%,rgba(14,116,144,0.14),transparent_35%)]"
+      aria-hidden="true"
+    ></div>
+    <main class="mx-auto min-h-dvh w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+      <header class="mb-5 sm:mb-7">
+        <div
+          class="inline-flex items-center gap-2 rounded-full border border-cyan-200/70 bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-cyan-700 shadow-soft backdrop-blur"
+        >
+          Live Commuter Dashboard
+        </div>
+        <h1 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Comu Schedule</h1>
+        <p class="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
+          Mobile-first train departures in WIB, optimized for quick station checks.
+        </p>
       </header>
 
-      <section id="picker-view" class="panel hidden" aria-labelledby="picker-title">
-        <h2 id="picker-title">Select Preferred Stations</h2>
-        <p class="hint">Choose 1-5 stations. Saved on this device.</p>
-        <div id="picker-status" class="status"></div>
-        <label class="search-wrap" for="station-search">Search station</label>
-        <input id="station-search" type="search" autocomplete="off" placeholder="Type station name or ID" />
-        <div id="selection-count" class="selection-count">0 selected</div>
-        <div id="station-list" class="station-list" role="group" aria-label="Station choices"></div>
-        <button id="save-stations" type="button" class="btn btn-primary" disabled>Save & Continue</button>
+      <section
+        id="picker-view"
+        class="hidden rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-soft backdrop-blur sm:p-6"
+        aria-labelledby="picker-title"
+      >
+        <h2 id="picker-title" class="text-xl font-bold tracking-tight text-slate-900">Select Preferred Stations</h2>
+        <p class="mt-1 text-sm text-slate-600">Choose 1-5 stations. Saved on this device.</p>
+        <div id="picker-status" class="mb-3 mt-2 min-h-5 text-sm text-slate-600"></div>
+        <label class="mb-1.5 block text-sm font-semibold text-slate-700" for="station-search">Search station</label>
+        <input
+          id="station-search"
+          type="search"
+          autocomplete="off"
+          placeholder="Type station name or ID"
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+        />
+        <div id="selection-count" class="mb-3 mt-3 text-sm font-medium text-slate-600">0 selected</div>
+        <div id="station-list" class="mb-4 grid max-h-[55dvh] gap-2 overflow-y-auto pr-1" role="group" aria-label="Station choices"></div>
+        <button
+          id="save-stations"
+          type="button"
+          class="w-full rounded-xl bg-cyan-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-not-allowed disabled:bg-cyan-300"
+          disabled
+        >
+          Save & Continue
+        </button>
       </section>
 
-      <section id="schedule-view" class="panel hidden" aria-live="polite">
-        <div class="actions">
-          <button id="edit-stations" type="button" class="btn">Edit Stations</button>
-          <button id="refresh-data" type="button" class="btn btn-primary">Refresh</button>
+      <section
+        id="schedule-view"
+        class="hidden rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-soft backdrop-blur sm:p-6"
+        aria-live="polite"
+      >
+        <div class="mb-3 grid gap-2 sm:grid-cols-2">
+          <button
+            id="edit-stations"
+            type="button"
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          >
+            Edit Stations
+          </button>
+          <button
+            id="refresh-data"
+            type="button"
+            class="w-full rounded-xl bg-cyan-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          >
+            Refresh
+          </button>
         </div>
-        <div id="status" class="status"></div>
-        <div id="window-label" class="window"></div>
-        <div id="cards" class="cards"></div>
+        <div id="status" class="mb-1 min-h-5 text-sm text-slate-600"></div>
+        <div id="window-label" class="mb-3 text-xs font-medium tracking-wide text-slate-500 sm:text-sm"></div>
+        <div id="cards" class="grid gap-3"></div>
       </section>
     </main>
 

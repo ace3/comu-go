@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const defaultBackfillDataDir = "/data"
+const defaultBackfillDataDir = "data"
 
 func backfillFromDataIfEmpty(db *gorm.DB, dataDir string) error {
 	var stationCount int64
@@ -32,9 +33,7 @@ func backfillFromDataIfEmpty(db *gorm.DB, dataDir string) error {
 		return nil
 	}
 
-	if strings.TrimSpace(dataDir) == "" {
-		dataDir = defaultBackfillDataDir
-	}
+	dataDir = resolveBackfillDataDir(dataDir)
 
 	if stationCount == 0 {
 		if err := backfillStationsFromFile(db, filepath.Join(dataDir, "stations.json")); err != nil {
@@ -75,6 +74,10 @@ type scheduleDataRow struct {
 func backfillStationsFromFile(db *gorm.DB, path string) error {
 	rows, err := loadStationRows(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			slog.Warn("stations backfill file not found, skipping", "path", path)
+			return nil
+		}
 		return err
 	}
 
@@ -118,6 +121,10 @@ func backfillStationsFromFile(db *gorm.DB, path string) error {
 func backfillSchedulesFromFile(db *gorm.DB, path string) error {
 	rows, err := loadScheduleRows(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			slog.Warn("schedules backfill file not found, skipping", "path", path)
+			return nil
+		}
 		return err
 	}
 
@@ -242,4 +249,23 @@ func parseBackfillTime(value string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("unsupported time format: %s", raw)
+}
+
+func resolveBackfillDataDir(dataDir string) string {
+	if trimmed := strings.TrimSpace(dataDir); trimmed != "" {
+		return trimmed
+	}
+
+	candidates := []string{
+		defaultBackfillDataDir,
+		"./data",
+		"/app/data",
+	}
+	for _, candidate := range candidates {
+		info, err := os.Stat(candidate)
+		if err == nil && info.IsDir() {
+			return candidate
+		}
+	}
+	return defaultBackfillDataDir
 }
