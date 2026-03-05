@@ -1,7 +1,7 @@
 (function (root) {
   const DEFAULTS = {
     minTransferMs: 2 * 60 * 1000,
-    maxTransferMs: 120 * 60 * 1000,
+    maxTransferMs: 240 * 60 * 1000,
     maxTransfers: 3,
     maxCandidateDepartures: 60,
     maxForwardStops: 30,
