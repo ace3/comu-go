@@ -790,9 +790,8 @@ func isDominated(candidate, challenger tripPlanOption) bool {
 		return false
 	}
 	departsNoEarlier := !challenger.DepartAt.Before(candidate.DepartAt)
-	arrivesNoLater := !challenger.ArriveAt.After(candidate.ArriveAt)
-	strictlyBetter := challenger.DepartAt.After(candidate.DepartAt) || challenger.ArriveAt.Before(candidate.ArriveAt)
-	return departsNoEarlier && arrivesNoLater && strictlyBetter
+	arrivesStrictlyEarlier := challenger.ArriveAt.Before(candidate.ArriveAt)
+	return departsNoEarlier && arrivesStrictlyEarlier
 }
 
 func filterDominated(options []tripPlanOption) []tripPlanOption {

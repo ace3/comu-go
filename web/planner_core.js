@@ -152,9 +152,8 @@
       return false;
     }
     const departsNoEarlier = challenger.departAt >= candidate.departAt;
-    const arrivesNoLater = challenger.arriveAt <= candidate.arriveAt;
-    const strictlyBetter = challenger.departAt > candidate.departAt || challenger.arriveAt < candidate.arriveAt;
-    return departsNoEarlier && arrivesNoLater && strictlyBetter;
+    const arrivesStrictlyEarlier = challenger.arriveAt < candidate.arriveAt;
+    return departsNoEarlier && arrivesStrictlyEarlier;
   }
 
   function filterDominatedOptions(options) {

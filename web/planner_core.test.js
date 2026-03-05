@@ -162,9 +162,12 @@ test("one-transfer options are ordered by fastest arrival first", async () => {
     config: { maxResults: 6 },
   });
 
-  assert.equal(result.options.length, 1);
-  assert.equal(result.options[0].legs[0].trainId, "F2");
+  assert.equal(result.options.length, 2);
+  // F1→TIGHT (22min safe wait) ranks above F2→TIGHT (2min tight wait) by wait quality
+  assert.equal(result.options[0].legs[0].trainId, "F1");
   assert.equal(result.options[0].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[1].legs[0].trainId, "F2");
+  assert.equal(result.options[1].legs[1].trainId, "TIGHT");
 });
 
 test("dominates and removes non-optimal options across different departure times", async () => {
