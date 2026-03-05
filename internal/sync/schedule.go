@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/comu/api/internal/config"
@@ -33,33 +34,44 @@ type krlScheduleResponse struct {
 	Data   json.RawMessage `json:"data"` // can be [] or "No data" string
 }
 
-// SyncSchedules loads all stations and fetches schedules in batches of 5.
+const scheduleSyncParallelism = 5
+
+var syncStationSchedulesFunc = syncStationSchedules
+
+// SyncSchedules loads all stations and fetches schedules with bounded parallelism.
 func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
 	var stations []models.Station
-	if err := db.Find(&stations).Error; err != nil {
+	if err := db.Where("type = ? OR type = '' OR type IS NULL", "KRL").Find(&stations).Error; err != nil {
 		return fmt.Errorf("loading stations: %w", err)
 	}
 
-	slog.Info("syncing schedules", "stations", len(stations), "batch_size", 5)
+	slog.Info("syncing schedules", "stations", len(stations), "parallelism", scheduleSyncParallelism)
 
-	batchSize := 5
-	for i := 0; i < len(stations); i += batchSize {
-		end := i + batchSize
-		if end > len(stations) {
-			end = len(stations)
-		}
-		batch := stations[i:end]
+	jobs := make(chan string, len(stations))
+	var wg sync.WaitGroup
 
-		for _, station := range batch {
-			if err := syncStationSchedules(cfg, db, station.ID); err != nil {
-				slog.Error("error syncing station schedule", "station_id", station.ID, "error", err)
-			}
-		}
-
-		if end < len(stations) {
-			time.Sleep(500 * time.Millisecond)
-		}
+	workerCount := scheduleSyncParallelism
+	if len(stations) < workerCount {
+		workerCount = len(stations)
 	}
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for stationID := range jobs {
+				if err := syncStationSchedulesFunc(cfg, db, stationID); err != nil {
+					slog.Error("error syncing station schedule", "station_id", stationID, "error", err)
+				}
+			}
+		}()
+	}
+
+	for _, station := range stations {
+		jobs <- station.ID
+	}
+	close(jobs)
+	wg.Wait()
 
 	slog.Info("schedule sync complete")
 	return nil
