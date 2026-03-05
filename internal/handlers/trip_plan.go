@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/comu/api/internal/cache"
 	"github.com/comu/api/internal/models"
@@ -19,6 +20,27 @@ const (
 	tripMinTransfer = 2 * time.Minute
 	tripMaxTransfer = 240 * time.Minute
 )
+
+var terminalCodeByName = map[string]string{
+	"TANGERANG":           "TNG",
+	"DURI":                "DU",
+	"MANGGARAI":           "MRI",
+	"TANAHABANG":          "THB",
+	"SUDIRMANBARU":        "SUDB",
+	"SUDIRMAN":            "SUD",
+	"KARET":               "KAT",
+	"BOGOR":               "BOO",
+	"JAKARTAKOTA":         "JAKK",
+	"KAMPUNGBANDAN":       "KPB",
+	"CIKARANG":            "CKR",
+	"BEKASI":              "BKS",
+	"ANGKE":               "AK",
+	"TAMBUN":              "TB",
+	"BANDARSOEKARNOHATTA": "BST",
+	"SOEKARNOHATTA":       "BST",
+	"RANGKASBITUNG":       "RK",
+	"MERAK":               "MRK",
+}
 
 type TripPlanHandler struct {
 	db    *gorm.DB
@@ -186,6 +208,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		if len(route) == 0 {
 			continue
 		}
+		route = appendTerminalFallbackStops(route, fromID, first.Route)
 		fromIdx := findRouteIndex(route, fromID, first.DepartsAt.Add(-tripMinTransfer))
 		if fromIdx < 0 {
 			continue
@@ -321,6 +344,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 				if len(route) == 0 {
 					continue
 				}
+				route = appendTerminalFallbackStops(route, transferID, dep.Route)
 				fromIdx := findRouteIndex(route, transferID, dep.DepartsAt.Add(-tripMinTransfer))
 				if fromIdx < 0 {
 					continue
@@ -457,6 +481,61 @@ func findDestinationForward(route []models.Schedule, fromIdx int, toID string) i
 		}
 	}
 	return -1
+}
+
+func normalizeStationToken(value string) string {
+	var b strings.Builder
+	for _, r := range strings.ToUpper(strings.TrimSpace(value)) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func parseRouteTerminalID(routeName string) string {
+	route := strings.TrimSpace(routeName)
+	if !strings.Contains(route, "-") {
+		return ""
+	}
+	parts := strings.Split(route, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+	token := normalizeStationToken(parts[len(parts)-1])
+	if token == "" {
+		return ""
+	}
+	return terminalCodeByName[token]
+}
+
+func appendTerminalFallbackStops(route []models.Schedule, fromID, routeName string) []models.Schedule {
+	terminalID := parseRouteTerminalID(routeName)
+	if terminalID == "" || terminalID == fromID {
+		return route
+	}
+	for _, stop := range route {
+		if strings.ToUpper(stop.StationID) == terminalID {
+			return route
+		}
+	}
+	if len(route) == 0 {
+		return route
+	}
+	last := route[len(route)-1]
+	tail := last.ArrivesAt
+	if tail.IsZero() {
+		tail = last.DepartsAt
+	}
+	fallback := models.Schedule{
+		TrainID:   last.TrainID,
+		Line:      last.Line,
+		Route:     routeName,
+		StationID: terminalID,
+		DepartsAt: tail.Add(5 * time.Minute),
+		ArrivesAt: tail.Add(5 * time.Minute),
+	}
+	return append(route, fallback)
 }
 
 func pushOption(options *[]tripPlanOption, seen map[string]struct{}, option tripPlanOption) {
