@@ -3,9 +3,6 @@ const COOKIE_KEY = "preferred_stations";
 const MAX_STATIONS = 5;
 const WINDOW_BEFORE_MINUTES = 10;
 const WINDOW_AFTER_MINUTES = 60;
-const PLANNER_MAX_RUNTIME_MS = 4500;
-const PLANNER_MAX_EXPANDED_STATES = 450;
-const PLANNER_MAX_QUEUE_SIZE = 700;
 const PLANNER_MAX_RESULTS = 8;
 const WIB_ZONE = "Asia/Jakarta";
 const API_BASE = "/v1";
@@ -298,34 +295,12 @@ async function fetchStationSchedules(stationID) {
   return schedules;
 }
 
-function getStopTime(stop) {
-  const primary = stop.arrives_at || stop.departs_at;
-  return new Date(primary);
-}
-
-function findStopIndex(route, stationID, minTime) {
-  for (let i = 0; i < route.length; i++) {
-    const stop = route[i];
-    if (String(stop.station_id || "").toUpperCase() !== stationID) {
-      continue;
-    }
-    if (!minTime || new Date(stop.departs_at || stop.arrives_at) >= minTime) {
-      return i;
-    }
-  }
-  return route.findIndex((stop) => String(stop.station_id || "").toUpperCase() === stationID);
-}
-
 function diffMinutes(from, to) {
   return Math.max(0, Math.round((to.getTime() - from.getTime()) / 60000));
 }
 
 function yieldToBrowser() {
   return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-function optionKey(option) {
-  return option.legs.map((leg) => `${leg.trainId}:${leg.from}->${leg.to}@${leg.departAt.toISOString()}`).join("|");
 }
 
 function renderTripPlans(options) {
@@ -402,165 +377,34 @@ async function generateTripPlan() {
   showPlanStatus("Generating routes...");
 
   try {
-    const startedAt = Date.now();
-    const { windowMinutes, at } = buildWindowParams();
-    const qs = new URLSearchParams({
-      station_ids: fromID,
-      window_minutes: String(windowMinutes),
-      at: at.toISOString(),
-    });
-    const payload = await fetchWithTimeout(`${API_BASE}/schedule/window?${qs.toString()}`);
-    const schedules = payload?.data?.stations?.[0]?.schedules || [];
-    const firstLegCandidates = schedules.slice(0, 20);
-    if (firstLegCandidates.length === 0) {
+    const originSchedules = await fetchStationSchedules(fromID);
+    if (!Array.isArray(originSchedules) || originSchedules.length === 0) {
       showPlanStatus("No departures found from selected origin in current window.", true);
       return;
     }
 
-    const planOptions = [];
-    const seen = new Set();
-    const queue = [];
-    const MAX_TRANSFERS = 3;
-    const MIN_TRANSFER_MS = 2 * 60 * 1000;
-    const MAX_TRANSFER_MS = 120 * 60 * 1000;
-    const MAX_CANDIDATE_DEPARTURES = 40;
-    const MAX_FORWARD_STOPS = 24;
-    let expandedStates = 0;
-
-    for (const first of firstLegCandidates) {
-      const departAt = new Date(first.departs_at);
-      const route = await fetchTrainRoute(first.train_id);
-      if (!Array.isArray(route) || route.length === 0) {
-        continue;
-      }
-      const fromIdx = findStopIndex(route, fromID, new Date(departAt.getTime() - MIN_TRANSFER_MS));
-      if (fromIdx < 0) {
-        continue;
-      }
-      const maxForwardStops = Math.min(route.length, fromIdx + MAX_FORWARD_STOPS);
-      for (let i = fromIdx + 1; i < maxForwardStops; i++) {
-        const nextStation = String(route[i].station_id || "").toUpperCase();
-        if (!nextStation || nextStation === fromID) {
-          continue;
-        }
-        const arriveAt = getStopTime(route[i]);
-        const leg = {
-          trainId: first.train_id,
-          line: first.line,
-          from: fromID,
-          to: nextStation,
-          departAt,
-          arriveAt,
-        };
-        queue.push({
-          stationID: nextStation,
-          arriveAt,
-          legs: [leg],
-          visited: new Set([fromID, nextStation]),
-        });
-        if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
-          break;
-        }
-      }
-      if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
-        break;
-      }
+    const planner = window.PlannerCore;
+    if (!planner || typeof planner.findTripOptions !== "function") {
+      throw new Error("PlannerCore unavailable");
     }
 
-    while (queue.length > 0 && planOptions.length < PLANNER_MAX_RESULTS) {
-      if (Date.now() - startedAt > PLANNER_MAX_RUNTIME_MS) {
-        break;
-      }
-      if (expandedStates >= PLANNER_MAX_EXPANDED_STATES) {
-        break;
-      }
-      queue.sort((a, b) => a.arriveAt - b.arriveAt);
-      const current = queue.shift();
-      expandedStates += 1;
-      if (expandedStates % 20 === 0) {
-        showPlanStatus(`Generating routes... explored ${expandedStates} states`);
-        await yieldToBrowser();
-      }
-      const legs = current.legs;
-      const lastLeg = legs[legs.length - 1];
+    const { options, stats } = await planner.findTripOptions({
+      fromID,
+      toID,
+      now: new Date(),
+      firstLegSchedules: originSchedules,
+      getRoute: fetchTrainRoute,
+      getStationSchedules: fetchStationSchedules,
+      config: {
+        maxResults: PLANNER_MAX_RESULTS,
+      },
+    });
 
-      if (current.stationID === toID) {
-        const option = {
-          legs,
-          departAt: legs[0].departAt,
-          arriveAt: lastLeg.arriveAt,
-          durationMinutes: diffMinutes(legs[0].departAt, lastLeg.arriveAt),
-        };
-        const key = optionKey(option);
-        if (!seen.has(key)) {
-          seen.add(key);
-          planOptions.push(option);
-        }
-        continue;
-      }
-
-      if (legs.length - 1 >= MAX_TRANSFERS) {
-        continue;
-      }
-
-      const departures = await fetchStationSchedules(current.stationID);
-      const candidateDepartures = departures
-        .filter((s) => {
-          const depart = new Date(s.departs_at);
-          const gap = depart.getTime() - current.arriveAt.getTime();
-          return gap >= MIN_TRANSFER_MS && gap <= MAX_TRANSFER_MS;
-        })
-        .slice(0, MAX_CANDIDATE_DEPARTURES);
-
-      for (const next of candidateDepartures) {
-        const nextDepartAt = new Date(next.departs_at);
-        const nextRoute = await fetchTrainRoute(next.train_id);
-        if (!Array.isArray(nextRoute) || nextRoute.length === 0) {
-          continue;
-        }
-        const boardIdx = findStopIndex(nextRoute, current.stationID, new Date(nextDepartAt.getTime() - MIN_TRANSFER_MS));
-        if (boardIdx < 0) {
-          continue;
-        }
-
-        const maxForwardStops = Math.min(nextRoute.length, boardIdx + MAX_FORWARD_STOPS);
-        for (let i = boardIdx + 1; i < maxForwardStops; i++) {
-          const nextStation = String(nextRoute[i].station_id || "").toUpperCase();
-          if (!nextStation || current.visited.has(nextStation)) {
-            continue;
-          }
-          const nextArriveAt = getStopTime(nextRoute[i]);
-          const nextLeg = {
-            trainId: next.train_id,
-            line: next.line,
-            from: current.stationID,
-            to: nextStation,
-            departAt: nextDepartAt,
-            arriveAt: nextArriveAt,
-          };
-          const nextVisited = new Set(current.visited);
-          nextVisited.add(nextStation);
-          queue.push({
-            stationID: nextStation,
-            arriveAt: nextArriveAt,
-            legs: [...legs, nextLeg],
-            visited: nextVisited,
-          });
-          if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
-            break;
-          }
-        }
-        if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
-          break;
-        }
-      }
+    renderTripPlans(options);
+    if (stats?.truncated) {
+      showPlanStatus(`Showing best ${options.length} result(s) from bounded search.`);
     }
-
-    planOptions.sort((a, b) => a.departAt - b.departAt || a.arriveAt - b.arriveAt);
-    renderTripPlans(planOptions.slice(0, PLANNER_MAX_RESULTS));
-    if (Date.now() - startedAt > PLANNER_MAX_RUNTIME_MS || expandedStates >= PLANNER_MAX_EXPANDED_STATES) {
-      showPlanStatus(`Showing best ${Math.min(planOptions.length, PLANNER_MAX_RESULTS)} result(s) from bounded search.`);
-    }
+    await yieldToBrowser();
   } catch (_) {
     showPlanStatus("Failed to generate route options. Please retry.", true);
   } finally {
