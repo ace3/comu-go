@@ -411,7 +411,7 @@ async function generateTripPlan() {
     });
     const payload = await fetchWithTimeout(`${API_BASE}/schedule/window?${qs.toString()}`);
     const schedules = payload?.data?.stations?.[0]?.schedules || [];
-    const firstLegCandidates = schedules.slice(0, 8);
+    const firstLegCandidates = schedules.slice(0, 20);
     if (firstLegCandidates.length === 0) {
       showPlanStatus("No departures found from selected origin in current window.", true);
       return;
@@ -423,8 +423,8 @@ async function generateTripPlan() {
     const MAX_TRANSFERS = 3;
     const MIN_TRANSFER_MS = 2 * 60 * 1000;
     const MAX_TRANSFER_MS = 120 * 60 * 1000;
-    const MAX_CANDIDATE_DEPARTURES = 12;
-    const MAX_FORWARD_STOPS = 8;
+    const MAX_CANDIDATE_DEPARTURES = 40;
+    const MAX_FORWARD_STOPS = 24;
     let expandedStates = 0;
 
     for (const first of firstLegCandidates) {
