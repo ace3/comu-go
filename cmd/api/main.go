@@ -1,7 +1,7 @@
 // @title           Comuline API
 // @version         1.0
 // @description     Indonesian KRL Commuter Line Schedule API
-// @host            localhost:8080
+// @host            api.comuline.com
 // @BasePath        /
 package main
 
@@ -141,7 +141,9 @@ func main() {
 	// Start background scheduler (stops when ctx is cancelled)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	scheduler.Start(ctx, cfg, db, c)
+	if cfg.AutoSync {
+		scheduler.Start(ctx, cfg, db, c)
+	}
 
 	// HTTP server with graceful shutdown
 	srv := &http.Server{

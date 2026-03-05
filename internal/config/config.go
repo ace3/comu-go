@@ -10,15 +10,15 @@ import (
 )
 
 type Config struct {
-	DatabaseURL    string
-	RedisURL       string
-	Port           string
-	Env            string
-	KAIAuthToken   string
-	SyncSecret     string
-	TelegramToken  string
-	OpenMeteoBase  string
-	Timezone       string
+	DatabaseURL   string
+	RedisURL      string
+	Port          string
+	Env           string
+	KAIAuthToken  string
+	SyncSecret    string
+	TelegramToken string
+	OpenMeteoBase string
+	Timezone      string
 }
 
 func Load() *Config {
