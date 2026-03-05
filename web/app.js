@@ -5,6 +5,7 @@ const MAX_STATIONS = 5;
 const WINDOW_BEFORE_MINUTES = 10;
 const WINDOW_AFTER_MINUTES = 60;
 const PLANNER_MAX_RESULTS = 8;
+const TRIP_PLANNER_WINDOW_MINUTES = 60;
 const WIB_ZONE = "Asia/Jakarta";
 const API_BASE = "/v1";
 
@@ -359,6 +360,11 @@ function yieldToBrowser() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function filterTripOptionsByDepartureWindow(options, now, windowMinutes) {
+  const end = new Date(now.getTime() + (windowMinutes * 60 * 1000));
+  return options.filter((option) => option.departAt >= now && option.departAt <= end);
+}
+
 function renderTripPlans(options) {
   planResultsNode.innerHTML = "";
   for (const option of options) {
@@ -489,21 +495,33 @@ async function generateTripPlan() {
       throw new Error("PlannerCore unavailable");
     }
 
+    const now = new Date();
     const { options, stats } = await planner.findTripOptions({
       fromID,
       toID,
-      now: new Date(),
+      now,
       firstLegSchedules: originSchedules,
       getRoute: fetchTrainRoute,
       getStationSchedules: fetchStationSchedules,
       config: {
         maxResults: PLANNER_MAX_RESULTS,
+        lookbackMs: 0,
+        lookaheadMs: TRIP_PLANNER_WINDOW_MINUTES * 60 * 1000,
       },
     });
 
-    lastTripOptions = options;
+    const boundedOptions = filterTripOptionsByDepartureWindow(options, now, TRIP_PLANNER_WINDOW_MINUTES);
+    lastTripOptions = boundedOptions;
     lastTripStats = stats || null;
-    renderTripPlansWithStatus(options, stats);
+    renderTripPlansWithStatus(boundedOptions, stats);
+
+    const end = new Date(now.getTime() + (TRIP_PLANNER_WINDOW_MINUTES * 60 * 1000));
+    const windowHint = `Window ${formatWIBTime(now.toISOString())} → ${formatWIBTime(end.toISOString())}`;
+    if (planStatusNode.textContent) {
+      planStatusNode.textContent = `${planStatusNode.textContent} ${windowHint}.`;
+    } else {
+      showPlanStatus(windowHint);
+    }
     await yieldToBrowser();
   } catch (_) {
     showPlanStatus("Failed to generate route options. Please retry.", true);
