@@ -256,6 +256,16 @@ func resolveBackfillDataDir(dataDir string) string {
 		return trimmed
 	}
 
+	if found, ok := findDataDirFrom(filepath.Clean(".")); ok {
+		return found
+	}
+
+	if exe, err := os.Executable(); err == nil {
+		if found, ok := findDataDirFrom(filepath.Dir(exe)); ok {
+			return found
+		}
+	}
+
 	candidates := []string{
 		defaultBackfillDataDir,
 		"./data",
@@ -268,4 +278,24 @@ func resolveBackfillDataDir(dataDir string) string {
 		}
 	}
 	return defaultBackfillDataDir
+}
+
+func findDataDirFrom(start string) (string, bool) {
+	current, err := filepath.Abs(start)
+	if err != nil {
+		return "", false
+	}
+	for i := 0; i < 8; i++ {
+		candidate := filepath.Join(current, "data")
+		info, err := os.Stat(candidate)
+		if err == nil && info.IsDir() {
+			return candidate, true
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return "", false
 }

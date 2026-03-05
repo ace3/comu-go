@@ -71,7 +71,9 @@ func (h *StationHandler) GetStations(c *gin.Context) {
 	}
 
 	resp := response.BuildPaginatedSuccess(stations, page, limit, int(total))
-	_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
+	if total > 0 {
+		_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
+	}
 	c.JSON(http.StatusOK, resp)
 }
 

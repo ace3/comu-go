@@ -43,6 +43,7 @@ func main() {
 	if err := ensureInitialStationData(cfg, db, c, scheduler.RunNow); err != nil {
 		slog.Error("initial station sync failed", "error", err)
 	}
+	c.InvalidateAll(context.Background())
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/comu/api/internal/models"
@@ -118,6 +119,50 @@ func TestBackfillFromDataIfEmpty(t *testing.T) {
 		_ = db.Model(&models.Schedule{}).Count(&scheduleCount)
 		if stationCount != 0 || scheduleCount != 0 {
 			t.Fatalf("expected empty tables, got stations=%d schedules=%d", stationCount, scheduleCount)
+		}
+	})
+}
+
+func TestResolveBackfillDataDir(t *testing.T) {
+	t.Run("uses explicit data directory when provided", func(t *testing.T) {
+		got := resolveBackfillDataDir("/tmp/custom-data")
+		if got != "/tmp/custom-data" {
+			t.Fatalf("resolveBackfillDataDir() = %q, want %q", got, "/tmp/custom-data")
+		}
+	})
+
+	t.Run("discovers data directory from ancestor of cwd", func(t *testing.T) {
+		root := t.TempDir()
+		dataDir := filepath.Join(root, "data")
+		if err := os.MkdirAll(dataDir, 0o755); err != nil {
+			t.Fatalf("mkdir data dir: %v", err)
+		}
+		deepDir := filepath.Join(root, "cmd", "api")
+		if err := os.MkdirAll(deepDir, 0o755); err != nil {
+			t.Fatalf("mkdir nested dir: %v", err)
+		}
+		t.Chdir(deepDir)
+
+		got := resolveBackfillDataDir("")
+		gotAbs, err := filepath.Abs(got)
+		if err != nil {
+			t.Fatalf("abs path: %v", err)
+		}
+		wantAbs, err := filepath.Abs(dataDir)
+		if err != nil {
+			t.Fatalf("abs expected path: %v", err)
+		}
+		if gotAbs != wantAbs {
+			t.Fatalf("resolveBackfillDataDir() = %q, want %q", gotAbs, wantAbs)
+		}
+	})
+
+	t.Run("falls back to default when no data directory is found", func(t *testing.T) {
+		empty := t.TempDir()
+		t.Chdir(empty)
+		got := resolveBackfillDataDir("")
+		if !strings.HasSuffix(filepath.Clean(got), filepath.Clean(defaultBackfillDataDir)) {
+			t.Fatalf("resolveBackfillDataDir() = %q, expected fallback to %q", got, defaultBackfillDataDir)
 		}
 	})
 }
