@@ -290,8 +290,26 @@ async function fetchStationSchedules(stationID) {
   if (stationScheduleCache.has(stationID)) {
     return stationScheduleCache.get(stationID);
   }
-  const payload = await fetchWithTimeout(`${API_BASE}/schedule/${encodeURIComponent(stationID)}?limit=500`);
-  const schedules = Array.isArray(payload?.data) ? payload.data : [];
+  const limit = 500;
+  let page = 1;
+  let total = 0;
+  const schedules = [];
+
+  while (true) {
+    const payload = await fetchWithTimeout(
+      `${API_BASE}/schedule/${encodeURIComponent(stationID)}?limit=${limit}&page=${page}`,
+    );
+    const items = Array.isArray(payload?.data) ? payload.data : [];
+    schedules.push(...items);
+
+    const metadata = payload?.metadata || {};
+    total = Number(metadata.total || items.length || 0);
+    if (items.length === 0 || schedules.length >= total || items.length < limit) {
+      break;
+    }
+    page += 1;
+  }
+
   stationScheduleCache.set(stationID, schedules);
   return schedules;
 }
