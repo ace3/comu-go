@@ -1,19 +1,25 @@
-.PHONY: build run sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
+.PHONY: build run run-bot sync-station sync-schedule sync sync-mrt-station sync-mrt-schedule sync-mrt up down prod-up prod-down prod-logs swag tidy clean help migrate migrate-down
 
 # Binary output paths
 BIN_DIR := bin
 API_BIN := $(BIN_DIR)/api
 SYNC_BIN := $(BIN_DIR)/sync
+BOT_BIN := $(BIN_DIR)/bot
 
-## build: compile API and sync binaries
+## build: compile API, bot, and sync binaries
 build:
 	mkdir -p $(BIN_DIR)
 	go build -ldflags="-s -w" -o $(API_BIN) ./cmd/api
 	go build -ldflags="-s -w" -o $(SYNC_BIN) ./cmd/sync
+	go build -ldflags="-s -w" -o $(BOT_BIN) ./cmd/bot
 
 ## run: run the API server (with live .env)
 run:
 	go run ./cmd/api
+
+## run-bot: run the Telegram bot (with live .env)
+run-bot:
+	go run ./cmd/bot
 
 ## sync-station: fetch and upsert stations from KRL API
 sync-station:
