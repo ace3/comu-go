@@ -31,6 +31,15 @@ let preferredStations = [];
 let selectedSet = new Set();
 const routeCache = new Map();
 const stationScheduleCache = new Map();
+const tripPlanFormatter = window.TripPlanFormatter || {
+  buildLegDetailText: (leg, formatTime, stationNameOnlyFn) =>
+    `${stationNameOnlyFn(leg.from)} dep ${formatTime(leg.departAt)} • ${stationNameOnlyFn(leg.to)} arr ${formatTime(leg.arriveAt)}`,
+  buildTransferDetailText: (firstLeg, secondLeg, formatTime, stationNameOnlyFn) => {
+    const waitMin = Math.max(0, Math.round((secondLeg.departAt.getTime() - firstLeg.arriveAt.getTime()) / 60000));
+    return `Transit at ${stationNameOnlyFn(firstLeg.to)} • arrive ${formatTime(firstLeg.arriveAt)} • depart ${formatTime(secondLeg.departAt)} • wait ${waitMin} min`;
+  },
+  classifyTransferWait: () => "",
+};
 
 function sanitizeStationIDs(input) {
   if (!Array.isArray(input)) {
@@ -358,18 +367,36 @@ function renderTripPlans(options) {
     card.appendChild(meta);
 
     const legs = document.createElement("div");
-    legs.className = "mt-2 grid gap-1 text-sm text-slate-700";
+    legs.className = "mt-2 grid gap-2 text-sm text-slate-700";
     for (let i = 0; i < option.legs.length; i++) {
       const leg = option.legs[i];
       const legNode = document.createElement("div");
+      legNode.className = "font-medium text-slate-800";
       legNode.textContent = `${leg.trainId} | ${leg.line} | ${stationNameOnly(leg.from)} → ${stationNameOnly(leg.to)}`;
       legs.appendChild(legNode);
 
+      const legDetail = document.createElement("div");
+      legDetail.className = "text-xs font-medium text-slate-500";
+      legDetail.textContent = tripPlanFormatter.buildLegDetailText(leg, (date) => formatWIBTime(date.toISOString()), stationNameOnly);
+      legs.appendChild(legDetail);
+
       if (i < option.legs.length - 1) {
-        const waitMin = diffMinutes(leg.arriveAt, option.legs[i + 1].departAt);
+        const nextLeg = option.legs[i + 1];
+        const waitMin = diffMinutes(leg.arriveAt, nextLeg.departAt);
+        const waitType = tripPlanFormatter.classifyTransferWait(waitMin);
         const transfer = document.createElement("div");
-        transfer.className = "text-xs font-semibold text-amber-700";
-        transfer.textContent = `Transit at ${stationNameOnly(leg.to)} • wait ${waitMin} min`;
+        transfer.className =
+          waitType === "tight transfer"
+            ? "rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700"
+            : waitType === "long wait"
+              ? "rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700"
+              : "rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700";
+        transfer.textContent = tripPlanFormatter.buildTransferDetailText(
+          leg,
+          nextLeg,
+          (date) => formatWIBTime(date.toISOString()),
+          stationNameOnly,
+        );
         legs.appendChild(transfer);
       }
     }
