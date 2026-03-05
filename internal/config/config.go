@@ -19,6 +19,7 @@ type Config struct {
 	TelegramToken string
 	OpenMeteoBase string
 	Timezone      string
+	AutoSync      bool
 }
 
 func Load() *Config {
@@ -44,6 +45,8 @@ func Load() *Config {
 		tz = "Asia/Jakarta"
 	}
 
+	autoSync := os.Getenv("AUTO_SYNC")
+
 	return &Config{
 		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		RedisURL:      os.Getenv("REDIS_URL"),
@@ -54,6 +57,7 @@ func Load() *Config {
 		TelegramToken: os.Getenv("TELEGRAM_TOKEN"),
 		OpenMeteoBase: openMeteoBase,
 		Timezone:      tz,
+		AutoSync:      autoSync == "true" || autoSync == "1",
 	}
 }
 

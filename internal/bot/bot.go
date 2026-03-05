@@ -214,11 +214,18 @@ func (b *Bot) handleGoEvening(ctx context.Context, msg *tgbotapi.Message, user *
 }
 
 func (b *Bot) startSchedule(ctx context.Context, msg *tgbotapi.Message, msgs *i18n.Messages) {
-	_ = b.sessions.Set(ctx, msg.From.ID, &session.State{
+	st := &session.State{
 		Command: "schedule",
 		Step:    1,
 		Data:    map[string]string{},
-	})
+	}
+	_ = b.sessions.Set(ctx, msg.From.ID, st)
+
+	// If origin was passed inline (e.g. /schedule rawa buaya), skip step 1.
+	if arg := strings.TrimSpace(msg.CommandArguments()); arg != "" {
+		b.handleScheduleStep(ctx, msg, nil, msgs, st, arg)
+		return
+	}
 	b.sendMarkdown(msg.Chat.ID, msgs.AskScheduleOrigin())
 }
 

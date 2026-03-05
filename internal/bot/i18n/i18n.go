@@ -40,45 +40,45 @@ func (m *Messages) Help() string {
 		return `📋 *Daftar Perintah*
 
 *Pengaturan*
-/set\_route – Atur stasiun & waktu perjalanan
-/set\_schedule – Toggle hari kerja
-/toggle\_notifs – Aktifkan/matikan notifikasi harian
+/set_route – Atur stasiun & waktu perjalanan
+/set_schedule – Toggle hari kerja
+/toggle_notifs – Aktifkan/matikan notifikasi harian
 /settings – Lihat profil Anda
 
 *Jadwal*
-/go\_morning – Jadwal pagi (rumah→kantor)
-/go\_evening – Jadwal sore (kantor→rumah)
+/go_morning – Jadwal pagi (rumah→kantor)
+/go_evening – Jadwal sore (kantor→rumah)
 /schedule – Cari jadwal manual
 
 *Alert Satu Kali*
-/schedule\_once – Atur alert sekali
-/list\_alerts – Daftar alert terjadwal
-/cancel\_alert \<id\> – Batalkan alert
+/schedule_once – Atur alert sekali
+/list_alerts – Daftar alert terjadwal
+/cancel_alert <id> – Batalkan alert
 
 *Lainnya*
-/station \<nama\> – Cari stasiun
+/station <nama> – Cari stasiun
 /lang – Ganti bahasa (EN/ID)`
 	}
 	return `📋 *Command List*
 
 *Settings*
-/set\_route – Set your home & away stations + times
-/set\_schedule – Toggle work days
-/toggle\_notifs – Enable/disable daily push alerts
+/set_route – Set your home & away stations + times
+/set_schedule – Toggle work days
+/toggle_notifs – Enable/disable daily push alerts
 /settings – View your profile
 
 *Schedules*
-/go\_morning – Morning schedule (home→away)
-/go\_evening – Evening schedule (away→home)
+/go_morning – Morning schedule (home→away)
+/go_evening – Evening schedule (away→home)
 /schedule – Manual origin/dest/time query
 
 *One-Time Alerts*
-/schedule\_once – Set a one-time alert
-/list\_alerts – View upcoming alerts
-/cancel\_alert \<id\> – Cancel a specific alert
+/schedule_once – Set a one-time alert
+/list_alerts – View upcoming alerts
+/cancel_alert <id> – Cancel a specific alert
 
 *Other*
-/station \<query\> – Fuzzy station search
+/station <query> – Fuzzy station search
 /lang – Toggle language (EN/ID)`
 }
 
@@ -124,7 +124,7 @@ func (m *Messages) RouteSet(home, away, morning, evening string) string {
 🌅 Pagi: %s
 🌆 Sore: %s
 
-Gunakan /go\_morning atau /go\_evening untuk cek jadwal.`, home, away, morning, evening)
+Gunakan /go_morning atau /go_evening untuk cek jadwal.`, home, away, morning, evening)
 	}
 	return fmt.Sprintf(`✅ *Route saved!*
 
@@ -133,15 +133,15 @@ Gunakan /go\_morning atau /go\_evening untuk cek jadwal.`, home, away, morning, 
 🌅 Morning: %s
 🌆 Evening: %s
 
-Use /go\_morning or /go\_evening to check schedules.`, home, away, morning, evening)
+Use /go_morning or /go_evening to check schedules.`, home, away, morning, evening)
 }
 
 // NoRouteSet is shown when the user hasn't configured a route yet.
 func (m *Messages) NoRouteSet() string {
 	if m.isID() {
-		return "⚠️ Anda belum mengatur rute. Gunakan /set\\_route terlebih dahulu."
+		return "⚠️ Anda belum mengatur rute. Gunakan /set_route terlebih dahulu."
 	}
-	return "⚠️ You haven't set up a route yet. Use /set\\_route first."
+	return "⚠️ You haven't set up a route yet. Use /set_route first."
 }
 
 // StationNotFound is shown when no station matches the query.
@@ -221,7 +221,7 @@ func (m *Messages) Settings(telegramID int64, home, away, morning, evening strin
 🔔 Notifikasi: %s
 🌐 Bahasa: %s
 
-Gunakan /set\_route untuk mengubah rute.`, telegramID, home, away, morning, evening, days, notifsStr, lang)
+Gunakan /set_route untuk mengubah rute.`, telegramID, home, away, morning, evening, days, notifsStr, lang)
 	}
 	return fmt.Sprintf(`⚙️ *Your Settings*
 
@@ -234,7 +234,7 @@ Gunakan /set\_route untuk mengubah rute.`, telegramID, home, away, morning, even
 🔔 Notifications: %s
 🌐 Language: %s
 
-Use /set\_route to change your route.`, telegramID, home, away, morning, evening, days, notifsStr, lang)
+Use /set_route to change your route.`, telegramID, home, away, morning, evening, days, notifsStr, lang)
 }
 
 // LangSwitched confirms language change.
@@ -248,9 +248,9 @@ func (m *Messages) LangSwitched() string {
 // AskScheduleOrigin prompts for the origin station in /schedule.
 func (m *Messages) AskScheduleOrigin() string {
 	if m.isID() {
-		return "🚉 Dari stasiun mana? Ketik nama stasiun asal:\n(Ketik /station untuk mencari)"
+		return "🚉 Dari stasiun mana? Ketik nama stasiun asal:\n(Contoh: Rawa Buaya atau BW)\n(Ketik /station untuk mencari)"
 	}
-	return "🚉 From which station? Enter the origin station name:\n(Type /station to search)"
+	return "🚉 From which station? Type the origin station name:\n(e.g. Rawa Buaya or BW)\n(Type /station to search)"
 }
 
 // AskScheduleDest prompts for the destination station.
@@ -302,7 +302,7 @@ func (m *Messages) AlertSet(from, to string, t string, id string) string {
 ⏰ %s
 🆔 ID: %s
 
-/list\_alerts untuk melihat daftar | /cancel\_alert %s untuk membatalkan`, from, to, t, id[:8], id[:8])
+/list_alerts untuk melihat daftar | /cancel_alert %s untuk membatalkan`, from, to, t, id[:8], id[:8])
 	}
 	return fmt.Sprintf(`✅ *Alert scheduled!*
 
@@ -310,15 +310,15 @@ func (m *Messages) AlertSet(from, to string, t string, id string) string {
 ⏰ %s
 🆔 ID: %s
 
-/list\_alerts to view all | /cancel\_alert %s to cancel`, from, to, t, id[:8], id[:8])
+/list_alerts to view all | /cancel_alert %s to cancel`, from, to, t, id[:8], id[:8])
 }
 
 // NoAlerts is shown when the user has no scheduled alerts.
 func (m *Messages) NoAlerts() string {
 	if m.isID() {
-		return "📭 Tidak ada alert terjadwal. Gunakan /schedule\\_once untuk membuat."
+		return "📭 Tidak ada alert terjadwal. Gunakan /schedule_once untuk membuat."
 	}
-	return "📭 No scheduled alerts. Use /schedule\\_once to create one."
+	return "📭 No scheduled alerts. Use /schedule_once to create one."
 }
 
 // AlertCancelled confirms an alert was cancelled.
