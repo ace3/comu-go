@@ -6,7 +6,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.406178+00"
+    "updated_at": "2026-03-05 07:15:16.059091+00"
   },
   {
     "uid": "angke",
@@ -15,7 +15,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.417759+00"
+    "updated_at": "2026-03-05 07:15:16.073633+00"
   },
   {
     "uid": "asean",
@@ -24,7 +24,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"26\", \"order\": 7, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.878344+00"
+    "updated_at": "2026-03-05 07:20:00.755828+00"
   },
   {
     "uid": "bandara-soekarno-hatta",
@@ -33,7 +33,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 1, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.527301+00"
+    "updated_at": "2026-03-05 07:15:16.278721+00"
   },
   {
     "uid": "batu-ceper",
@@ -42,7 +42,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.431733+00"
+    "updated_at": "2026-03-05 07:15:16.082259+00"
   },
   {
     "uid": "bekasi",
@@ -51,7 +51,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.423042+00"
+    "updated_at": "2026-03-05 07:15:16.077956+00"
   },
   {
     "uid": "bekasi-timur",
@@ -60,7 +60,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.425053+00"
+    "updated_at": "2026-03-05 07:15:16.079124+00"
   },
   {
     "uid": "bendungan-hilir",
@@ -69,7 +69,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"29\", \"order\": 10, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.882707+00"
+    "updated_at": "2026-03-05 07:20:00.758959+00"
   },
   {
     "uid": "blok-a",
@@ -78,7 +78,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"24\", \"order\": 5, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.875675+00"
+    "updated_at": "2026-03-05 07:20:00.754095+00"
   },
   {
     "uid": "blok-m-bca",
@@ -87,7 +87,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"25\", \"order\": 6, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.877209+00"
+    "updated_at": "2026-03-05 07:20:00.755034+00"
   },
   {
     "uid": "bogor",
@@ -96,7 +96,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.430203+00"
+    "updated_at": "2026-03-05 07:15:16.081099+00"
   },
   {
     "uid": "bojong-indah",
@@ -105,7 +105,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.427884+00"
+    "updated_at": "2026-03-05 07:15:16.08013+00"
   },
   {
     "uid": "bojonggede",
@@ -114,7 +114,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.420923+00"
+    "updated_at": "2026-03-05 07:15:16.076536+00"
   },
   {
     "uid": "brambanan",
@@ -123,7 +123,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.507684+00"
+    "updated_at": "2026-03-05 07:15:16.214226+00"
   },
   {
     "uid": "buaran",
@@ -132,7 +132,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.433082+00"
+    "updated_at": "2026-03-05 07:15:16.083875+00"
   },
   {
     "uid": "bundaran-hi",
@@ -141,7 +141,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"31\", \"order\": 13, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.896781+00"
+    "updated_at": "2026-03-05 07:20:00.76207+00"
   },
   {
     "uid": "cakung",
@@ -150,7 +150,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.447184+00"
+    "updated_at": "2026-03-05 07:15:16.104169+00"
   },
   {
     "uid": "catang",
@@ -159,7 +159,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.520522+00"
+    "updated_at": "2026-03-05 07:15:16.256379+00"
   },
   {
     "uid": "cawang",
@@ -168,7 +168,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.448235+00"
+    "updated_at": "2026-03-05 07:15:16.105285+00"
   },
   {
     "uid": "ceper",
@@ -177,7 +177,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.508492+00"
+    "updated_at": "2026-03-05 07:15:16.215498+00"
   },
   {
     "uid": "cibinong",
@@ -186,7 +186,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.434448+00"
+    "updated_at": "2026-03-05 07:15:16.085576+00"
   },
   {
     "uid": "cibitung",
@@ -195,7 +195,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.437228+00"
+    "updated_at": "2026-03-05 07:15:16.088072+00"
   },
   {
     "uid": "cicayur",
@@ -204,7 +204,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.435683+00"
+    "updated_at": "2026-03-05 07:15:16.086986+00"
   },
   {
     "uid": "cikampek",
@@ -213,7 +213,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 1, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.527994+00"
+    "updated_at": "2026-03-05 07:15:16.2794+00"
   },
   {
     "uid": "cikarang",
@@ -222,7 +222,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.440735+00"
+    "updated_at": "2026-03-05 07:15:16.093764+00"
   },
   {
     "uid": "cikeusal",
@@ -231,7 +231,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.521172+00"
+    "updated_at": "2026-03-05 07:15:16.262204+00"
   },
   {
     "uid": "cikini",
@@ -240,7 +240,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.439579+00"
+    "updated_at": "2026-03-05 07:15:16.090046+00"
   },
   {
     "uid": "cikoya",
@@ -249,7 +249,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.441838+00"
+    "updated_at": "2026-03-05 07:15:16.096265+00"
   },
   {
     "uid": "cilebut",
@@ -258,7 +258,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.442954+00"
+    "updated_at": "2026-03-05 07:15:16.09764+00"
   },
   {
     "uid": "cilegon",
@@ -267,7 +267,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.525321+00"
+    "updated_at": "2026-03-05 07:15:16.275991+00"
   },
   {
     "uid": "cilejit",
@@ -276,7 +276,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.43843+00"
+    "updated_at": "2026-03-05 07:15:16.089081+00"
   },
   {
     "uid": "cipete-raya",
@@ -285,7 +285,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"22\", \"order\": 3, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.871966+00"
+    "updated_at": "2026-03-05 07:20:00.751851+00"
   },
   {
     "uid": "cisauk",
@@ -294,7 +294,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.443954+00"
+    "updated_at": "2026-03-05 07:15:16.100392+00"
   },
   {
     "uid": "citayam",
@@ -303,7 +303,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.444851+00"
+    "updated_at": "2026-03-05 07:15:16.101519+00"
   },
   {
     "uid": "citeras",
@@ -312,7 +312,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.445862+00"
+    "updated_at": "2026-03-05 07:15:16.103109+00"
   },
   {
     "uid": "daru",
@@ -321,7 +321,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.449339+00"
+    "updated_at": "2026-03-05 07:15:16.10789+00"
   },
   {
     "uid": "delanggu",
@@ -330,7 +330,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.509264+00"
+    "updated_at": "2026-03-05 07:15:16.216759+00"
   },
   {
     "uid": "depok",
@@ -339,7 +339,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.450307+00"
+    "updated_at": "2026-03-05 07:15:16.10941+00"
   },
   {
     "uid": "depok-baru",
@@ -348,7 +348,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.451309+00"
+    "updated_at": "2026-03-05 07:15:16.110581+00"
   },
   {
     "uid": "dukuh-atas-bni",
@@ -357,7 +357,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"38\", \"order\": 12, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.886652+00"
+    "updated_at": "2026-03-05 07:20:00.760932+00"
   },
   {
     "uid": "duren-kalibata",
@@ -366,7 +366,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.452423+00"
+    "updated_at": "2026-03-05 07:15:16.111875+00"
   },
   {
     "uid": "duri",
@@ -375,7 +375,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.453471+00"
+    "updated_at": "2026-03-05 07:15:16.114375+00"
   },
   {
     "uid": "fatmawati-indomaret",
@@ -384,7 +384,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"21\", \"order\": 2, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.869409+00"
+    "updated_at": "2026-03-05 07:20:00.750782+00"
   },
   {
     "uid": "gang-sentiong",
@@ -393,7 +393,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.456472+00"
+    "updated_at": "2026-03-05 07:15:16.118206+00"
   },
   {
     "uid": "gawok",
@@ -402,7 +402,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.510124+00"
+    "updated_at": "2026-03-05 07:15:16.21794+00"
   },
   {
     "uid": "gondangdia",
@@ -411,7 +411,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.454509+00"
+    "updated_at": "2026-03-05 07:15:16.115848+00"
   },
   {
     "uid": "grogol",
@@ -420,7 +420,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.455521+00"
+    "updated_at": "2026-03-05 07:15:16.117009+00"
   },
   {
     "uid": "haji-nawi",
@@ -429,7 +429,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"23\", \"order\": 4, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.87406+00"
+    "updated_at": "2026-03-05 07:20:00.753+00"
   },
   {
     "uid": "istora-mandiri",
@@ -438,7 +438,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"28\", \"order\": 9, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.880791+00"
+    "updated_at": "2026-03-05 07:20:00.757861+00"
   },
   {
     "uid": "jakarta-kota",
@@ -447,7 +447,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.457477+00"
+    "updated_at": "2026-03-05 07:15:16.119629+00"
   },
   {
     "uid": "jambu-baru",
@@ -456,7 +456,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.519838+00"
+    "updated_at": "2026-03-05 07:15:16.254249+00"
   },
   {
     "uid": "jatake",
@@ -465,7 +465,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.458736+00"
+    "updated_at": "2026-03-05 07:15:16.120668+00"
   },
   {
     "uid": "jatinegara",
@@ -474,7 +474,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.467723+00"
+    "updated_at": "2026-03-05 07:15:16.127048+00"
   },
   {
     "uid": "jayakarta",
@@ -483,7 +483,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.464215+00"
+    "updated_at": "2026-03-05 07:15:16.124024+00"
   },
   {
     "uid": "jenar",
@@ -492,7 +492,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.511014+00"
+    "updated_at": "2026-03-05 07:15:16.219287+00"
   },
   {
     "uid": "juanda",
@@ -501,7 +501,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.468989+00"
+    "updated_at": "2026-03-05 07:15:16.128673+00"
   },
   {
     "uid": "jurang-mangu",
@@ -510,7 +510,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.466605+00"
+    "updated_at": "2026-03-05 07:15:16.12568+00"
   },
   {
     "uid": "kalideres",
@@ -519,7 +519,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.47224+00"
+    "updated_at": "2026-03-05 07:15:16.13262+00"
   },
   {
     "uid": "kampung-bandan",
@@ -528,7 +528,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.477201+00"
+    "updated_at": "2026-03-05 07:15:16.139398+00"
   },
   {
     "uid": "karangantu",
@@ -537,7 +537,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.523155+00"
+    "updated_at": "2026-03-05 07:15:16.270419+00"
   },
   {
     "uid": "karet",
@@ -546,7 +546,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.470285+00"
+    "updated_at": "2026-03-05 07:15:16.129825+00"
   },
   {
     "uid": "kebayoran",
@@ -555,7 +555,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.471302+00"
+    "updated_at": "2026-03-05 07:15:16.131432+00"
   },
   {
     "uid": "kemayoran",
@@ -564,7 +564,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.475139+00"
+    "updated_at": "2026-03-05 07:15:16.136345+00"
   },
   {
     "uid": "klaten",
@@ -573,7 +573,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.511704+00"
+    "updated_at": "2026-03-05 07:15:16.220513+00"
   },
   {
     "uid": "klender",
@@ -582,7 +582,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.473109+00"
+    "updated_at": "2026-03-05 07:15:16.133926+00"
   },
   {
     "uid": "klender-baru",
@@ -591,7 +591,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.474108+00"
+    "updated_at": "2026-03-05 07:15:16.134974+00"
   },
   {
     "uid": "kramat",
@@ -600,7 +600,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.476076+00"
+    "updated_at": "2026-03-05 07:15:16.138152+00"
   },
   {
     "uid": "kranji",
@@ -609,7 +609,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.478342+00"
+    "updated_at": "2026-03-05 07:15:16.140733+00"
   },
   {
     "uid": "krenceng",
@@ -618,7 +618,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.52603+00"
+    "updated_at": "2026-03-05 07:15:16.276968+00"
   },
   {
     "uid": "kutoarjo",
@@ -627,7 +627,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.512392+00"
+    "updated_at": "2026-03-05 07:15:16.221829+00"
   },
   {
     "uid": "lebak-bulus-grab",
@@ -636,7 +636,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"20\", \"order\": 1, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.865749+00"
+    "updated_at": "2026-03-05 07:20:00.747852+00"
   },
   {
     "uid": "lempuyangan",
@@ -645,7 +645,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.513033+00"
+    "updated_at": "2026-03-05 07:15:16.223054+00"
   },
   {
     "uid": "lenteng-agung",
@@ -654,7 +654,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.479295+00"
+    "updated_at": "2026-03-05 07:15:16.141798+00"
   },
   {
     "uid": "maguwo",
@@ -663,7 +663,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.513744+00"
+    "updated_at": "2026-03-05 07:15:16.224399+00"
   },
   {
     "uid": "maja",
@@ -672,7 +672,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.481078+00"
+    "updated_at": "2026-03-05 07:15:16.145198+00"
   },
   {
     "uid": "mangga-besar",
@@ -681,7 +681,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.480174+00"
+    "updated_at": "2026-03-05 07:15:16.143147+00"
   },
   {
     "uid": "manggarai",
@@ -690,7 +690,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.482795+00"
+    "updated_at": "2026-03-05 07:15:16.147813+00"
   },
   {
     "uid": "matraman",
@@ -699,7 +699,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.481973+00"
+    "updated_at": "2026-03-05 07:15:16.146499+00"
   },
   {
     "uid": "merak",
@@ -708,7 +708,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.526679+00"
+    "updated_at": "2026-03-05 07:15:16.277919+00"
   },
   {
     "uid": "metland-telagamurni",
@@ -717,7 +717,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.483665+00"
+    "updated_at": "2026-03-05 07:15:16.148837+00"
   },
   {
     "uid": "nambo",
@@ -726,7 +726,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.485028+00"
+    "updated_at": "2026-03-05 07:15:16.150267+00"
   },
   {
     "uid": "palmerah",
@@ -735,7 +735,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.487916+00"
+    "updated_at": "2026-03-05 07:15:16.155465+00"
   },
   {
     "uid": "palur",
@@ -744,7 +744,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.518387+00"
+    "updated_at": "2026-03-05 07:15:16.23727+00"
   },
   {
     "uid": "parung-panjang",
@@ -753,7 +753,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.48988+00"
+    "updated_at": "2026-03-05 07:15:16.161315+00"
   },
   {
     "uid": "pasar-minggu",
@@ -762,7 +762,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.491685+00"
+    "updated_at": "2026-03-05 07:15:16.165062+00"
   },
   {
     "uid": "pasar-minggu-baru",
@@ -771,7 +771,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.492261+00"
+    "updated_at": "2026-03-05 07:15:16.166028+00"
   },
   {
     "uid": "pasar-senen",
@@ -780,7 +780,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.490488+00"
+    "updated_at": "2026-03-05 07:15:16.162319+00"
   },
   {
     "uid": "pesing",
@@ -789,7 +789,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.491061+00"
+    "updated_at": "2026-03-05 07:15:16.163978+00"
   },
   {
     "uid": "pondok-cina",
@@ -798,7 +798,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.488574+00"
+    "updated_at": "2026-03-05 07:15:16.158275+00"
   },
   {
     "uid": "pondok-jati",
@@ -807,7 +807,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.489268+00"
+    "updated_at": "2026-03-05 07:15:16.160401+00"
   },
   {
     "uid": "pondok-rajeg",
@@ -816,7 +816,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.485728+00"
+    "updated_at": "2026-03-05 07:15:16.151483+00"
   },
   {
     "uid": "pondok-ranji",
@@ -825,7 +825,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.486572+00"
+    "updated_at": "2026-03-05 07:15:16.152629+00"
   },
   {
     "uid": "poris",
@@ -834,7 +834,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.487269+00"
+    "updated_at": "2026-03-05 07:15:16.153855+00"
   },
   {
     "uid": "purwakarta",
@@ -843,7 +843,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 2, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.528668+00"
+    "updated_at": "2026-03-05 07:15:16.280094+00"
   },
   {
     "uid": "purwosari",
@@ -852,7 +852,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.514392+00"
+    "updated_at": "2026-03-05 07:15:16.226014+00"
   },
   {
     "uid": "rajawali",
@@ -861,7 +861,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.49287+00"
+    "updated_at": "2026-03-05 07:15:16.166944+00"
   },
   {
     "uid": "rangkasbitung",
@@ -870,7 +870,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.52388+00"
+    "updated_at": "2026-03-05 07:15:16.273474+00"
   },
   {
     "uid": "rawa-buaya",
@@ -879,7 +879,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.494246+00"
+    "updated_at": "2026-03-05 07:15:16.169302+00"
   },
   {
     "uid": "rawa-buntu",
@@ -888,7 +888,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.493567+00"
+    "updated_at": "2026-03-05 07:15:16.168461+00"
   },
   {
     "uid": "sawah-besar",
@@ -897,7 +897,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.497225+00"
+    "updated_at": "2026-03-05 07:15:16.190333+00"
   },
   {
     "uid": "senayan-mastercard",
@@ -906,7 +906,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"27\", \"order\": 8, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.879509+00"
+    "updated_at": "2026-03-05 07:20:00.75671+00"
   },
   {
     "uid": "serang",
@@ -915,7 +915,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 0}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.522472+00"
+    "updated_at": "2026-03-05 07:15:16.266311+00"
   },
   {
     "uid": "serpong",
@@ -924,7 +924,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.495444+00"
+    "updated_at": "2026-03-05 07:15:16.177017+00"
   },
   {
     "uid": "setiabudi-astra",
@@ -933,7 +933,7 @@
     "type": "MRT",
     "metadata": "{\"nid\": \"30\", \"order\": 11, \"origin\": {\"color\": \"#DD0067\"}}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:44.884168+00"
+    "updated_at": "2026-03-05 07:20:00.759989+00"
   },
   {
     "uid": "solo-balapan",
@@ -942,7 +942,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.515073+00"
+    "updated_at": "2026-03-05 07:15:16.227083+00"
   },
   {
     "uid": "solo-jebres",
@@ -951,7 +951,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.519101+00"
+    "updated_at": "2026-03-05 07:15:16.241324+00"
   },
   {
     "uid": "srowot",
@@ -960,7 +960,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.515747+00"
+    "updated_at": "2026-03-05 07:15:16.229008+00"
   },
   {
     "uid": "sudimara",
@@ -969,7 +969,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.494882+00"
+    "updated_at": "2026-03-05 07:15:16.170194+00"
   },
   {
     "uid": "sudirman",
@@ -978,7 +978,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.496644+00"
+    "updated_at": "2026-03-05 07:15:16.184384+00"
   },
   {
     "uid": "sudirman-baru",
@@ -987,7 +987,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.496048+00"
+    "updated_at": "2026-03-05 07:15:16.179676+00"
   },
   {
     "uid": "taman-kota",
@@ -996,7 +996,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.50155+00"
+    "updated_at": "2026-03-05 07:15:16.20444+00"
   },
   {
     "uid": "tambun",
@@ -1005,7 +1005,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.497973+00"
+    "updated_at": "2026-03-05 07:15:16.192416+00"
   },
   {
     "uid": "tanah-abang",
@@ -1014,7 +1014,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.500828+00"
+    "updated_at": "2026-03-05 07:15:16.2033+00"
   },
   {
     "uid": "tanah-tinggi",
@@ -1023,7 +1023,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.505173+00"
+    "updated_at": "2026-03-05 07:15:16.210024+00"
   },
   {
     "uid": "tangerang",
@@ -1032,7 +1032,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.502271+00"
+    "updated_at": "2026-03-05 07:15:16.206011+00"
   },
   {
     "uid": "tanjung-barat",
@@ -1041,7 +1041,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.503079+00"
+    "updated_at": "2026-03-05 07:15:16.207385+00"
   },
   {
     "uid": "tanjung-priok",
@@ -1050,7 +1050,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.50405+00"
+    "updated_at": "2026-03-05 07:15:16.208845+00"
   },
   {
     "uid": "tebet",
@@ -1059,7 +1059,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.498557+00"
+    "updated_at": "2026-03-05 07:15:16.196176+00"
   },
   {
     "uid": "tenjo",
@@ -1068,7 +1068,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.499366+00"
+    "updated_at": "2026-03-05 07:15:16.200622+00"
   },
   {
     "uid": "tigaraksa",
@@ -1077,7 +1077,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.500151+00"
+    "updated_at": "2026-03-05 07:15:16.201998+00"
   },
   {
     "uid": "tonjong-baru",
@@ -1086,7 +1086,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.524592+00"
+    "updated_at": "2026-03-05 07:15:16.274668+00"
   },
   {
     "uid": "univ.-indonesia",
@@ -1095,7 +1095,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.505912+00"
+    "updated_at": "2026-03-05 07:15:16.211328+00"
   },
   {
     "uid": "univ.-pancasila",
@@ -1104,7 +1104,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.506671+00"
+    "updated_at": "2026-03-05 07:15:16.213028+00"
   },
   {
     "uid": "walantaka",
@@ -1113,7 +1113,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.521815+00"
+    "updated_at": "2026-03-05 07:15:16.263313+00"
   },
   {
     "uid": "wates",
@@ -1122,7 +1122,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.517044+00"
+    "updated_at": "2026-03-05 07:15:16.232411+00"
   },
   {
     "uid": "wojo",
@@ -1131,7 +1131,7 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.516393+00"
+    "updated_at": "2026-03-05 07:15:16.23045+00"
   },
   {
     "uid": "yogyakarta",
@@ -1140,6 +1140,6 @@
     "type": "KRL",
     "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
     "created_at": "0001-01-01 00:00:00+00",
-    "updated_at": "2026-03-05 05:10:13.517695+00"
+    "updated_at": "2026-03-05 07:15:16.233534+00"
   }
 ]

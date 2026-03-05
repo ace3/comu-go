@@ -34,7 +34,7 @@ type krlScheduleResponse struct {
 	Data   json.RawMessage `json:"data"` // can be [] or "No data" string
 }
 
-const scheduleSyncParallelism = 5
+const scheduleSyncParallelism = 1
 
 var syncStationSchedulesFunc = syncStationSchedules
 
@@ -90,7 +90,7 @@ func syncStationSchedules(cfg *config.Config, db *gorm.DB, stationID string) err
 	setKRLHeaders(req, cfg.Token())
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := fetchWithRetry(client, req, 3)
+	resp, err := fetchWithRetry(client, req, 5)
 	if err != nil {
 		return fmt.Errorf("fetching schedule for %s: %w", stationID, err)
 	}

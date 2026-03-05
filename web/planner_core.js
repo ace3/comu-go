@@ -13,6 +13,25 @@
     lookaheadMs: 6 * 60 * 60 * 1000,
   };
 
+  const TERMINAL_CODE_BY_NAME = {
+    TANGERANG: "TNG",
+    DURI: "DU",
+    MANGGARAI: "MRI",
+    TANAHABANG: "THB",
+    SUDIRMANBARU: "SUDB",
+    SUDIRMAN: "SUD",
+    KARET: "KAT",
+    BOGOR: "BOO",
+    JAKARTAKOTA: "JAKK",
+    KAMPUNGBANDAN: "KPB",
+    CIKARANG: "CKR",
+    BEKASI: "BKS",
+    ANGKE: "AK",
+    TAMBUN: "TB",
+    BANDARSOEKARNOHATTA: "BST",
+    SOEKARNOHATTA: "BST",
+  };
+
   function toTime(value) {
     return value instanceof Date ? value : new Date(value);
   }
@@ -72,6 +91,60 @@
     return sorted.filter((option) => option.legs.length === minLegs).slice(0, maxResults);
   }
 
+  function pushUniqueOption(options, seen, option) {
+    const key = optionKey(option);
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    options.push(option);
+  }
+
+  function normalizeStationToken(value) {
+    return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function parseRouteTerminalID(routeName) {
+    const route = String(routeName || "").trim();
+    if (!route.includes("-")) {
+      return "";
+    }
+    const parts = route.split("-").map((part) => normalizeStationToken(part)).filter(Boolean);
+    if (parts.length < 2) {
+      return "";
+    }
+    const raw = parts[parts.length - 1];
+    return TERMINAL_CODE_BY_NAME[raw] || "";
+  }
+
+  function extractForwardStops(route, fromID, minTime, maxForwardStops, routeName, departAt) {
+    if (!Array.isArray(route) || route.length === 0) {
+      return [];
+    }
+    const fromIdx = findStopIndex(route, fromID, minTime);
+    if (fromIdx < 0) {
+      return [];
+    }
+    const maxForward = Math.min(route.length, fromIdx + maxForwardStops);
+    const forwardStops = route.slice(fromIdx + 1, maxForward).map((stop) => ({
+      stationID: String(stop.station_id || "").toUpperCase(),
+      arriveAt: getStopTime(stop),
+    })).filter((stop) => stop.stationID && stop.stationID !== fromID);
+
+    const terminalID = parseRouteTerminalID(routeName);
+    if (terminalID && terminalID !== fromID && !forwardStops.some((stop) => stop.stationID === terminalID)) {
+      const tailTime = forwardStops.length > 0
+        ? forwardStops[forwardStops.length - 1].arriveAt
+        : toTime(departAt);
+      forwardStops.push({
+        stationID: terminalID,
+        arriveAt: new Date(tailTime.getTime() + (5 * 60 * 1000)),
+      });
+    }
+
+    return forwardStops;
+  }
+
   async function findTripOptions(input) {
     const config = { ...DEFAULTS, ...(input?.config || {}) };
     const fromID = String(input?.fromID || "").toUpperCase();
@@ -100,141 +173,143 @@
       .sort((a, b) => toTime(a.departs_at) - toTime(b.departs_at))
       .slice(0, config.maxCandidateDepartures);
 
-    const queue = [];
     const options = [];
     const seen = new Set();
+    let truncated = false;
     let expandedStates = 0;
     const startedAt = Date.now();
-    let truncated = false;
+    const oneTransferSeeds = new Map();
 
     for (const first of firstLegCandidates) {
       const departAt = toTime(first.departs_at);
       const route = await getRoute(first.train_id);
-      if (!Array.isArray(route) || route.length === 0) {
-        continue;
-      }
-      const fromIdx = findStopIndex(route, fromID, new Date(departAt.getTime() - config.minTransferMs));
-      if (fromIdx < 0) {
-        continue;
-      }
-      const maxForwardStops = Math.min(route.length, fromIdx + config.maxForwardStops);
-      for (let i = fromIdx + 1; i < maxForwardStops; i++) {
-        const nextStation = String(route[i].station_id || "").toUpperCase();
-        if (!nextStation || nextStation === fromID) {
-          continue;
-        }
-        const arriveAt = getStopTime(route[i]);
-        queue.push({
-          stationID: nextStation,
-          arriveAt,
-          legs: [{
-            trainId: first.train_id,
-            line: first.line,
-            from: fromID,
-            to: nextStation,
-            departAt,
-            arriveAt,
-          }],
-          visited: new Set([fromID, nextStation]),
-        });
-        if (queue.length >= config.maxQueueSize) {
+      const forwardStops = extractForwardStops(
+        route,
+        fromID,
+        new Date(departAt.getTime() - config.minTransferMs),
+        config.maxForwardStops,
+        first.route,
+        departAt,
+      );
+      for (const stop of forwardStops) {
+        expandedStates += 1;
+        if (Date.now() - startedAt > config.maxRuntimeMs || expandedStates >= config.maxExpandedStates) {
           truncated = true;
           break;
         }
+        const firstLeg = {
+          trainId: first.train_id,
+          line: first.line,
+          from: fromID,
+          to: stop.stationID,
+          departAt,
+          arriveAt: stop.arriveAt,
+        };
+
+        if (stop.stationID === toID) {
+          pushUniqueOption(options, seen, {
+            legs: [firstLeg],
+            departAt: firstLeg.departAt,
+            arriveAt: firstLeg.arriveAt,
+            durationMinutes: diffMinutes(firstLeg.departAt, firstLeg.arriveAt),
+          });
+          continue;
+        }
+
+        if (!oneTransferSeeds.has(stop.stationID)) {
+          oneTransferSeeds.set(stop.stationID, []);
+        }
+        const seedBucket = oneTransferSeeds.get(stop.stationID);
+        if (seedBucket.length < 6) {
+          seedBucket.push(firstLeg);
+        }
       }
-      if (queue.length >= config.maxQueueSize) {
-        truncated = true;
+      if (truncated) {
         break;
       }
     }
 
-    while (queue.length > 0 && options.length < config.maxResults * 5) {
+    const directOnly = finalizeOptions(options, config.maxResults);
+    if (directOnly.length > 0) {
+      return {
+        options: directOnly,
+        stats: { expandedStates, truncated },
+      };
+    }
+
+    const oneTransferOptions = [];
+    const oneTransferSeen = new Set();
+    for (const [transferStationID, firstLegs] of oneTransferSeeds.entries()) {
       if (Date.now() - startedAt > config.maxRuntimeMs || expandedStates >= config.maxExpandedStates) {
         truncated = true;
         break;
       }
-      queue.sort((a, b) => a.arriveAt - b.arriveAt);
-      const current = queue.shift();
-      expandedStates += 1;
-
-      const legs = current.legs;
-      const lastLeg = legs[legs.length - 1];
-      if (current.stationID === toID) {
-        const option = {
-          legs,
-          departAt: legs[0].departAt,
-          arriveAt: lastLeg.arriveAt,
-          durationMinutes: diffMinutes(legs[0].departAt, lastLeg.arriveAt),
-        };
-        const key = optionKey(option);
-        if (!seen.has(key)) {
-          seen.add(key);
-          options.push(option);
-        }
-        continue;
-      }
-
-      if (legs.length - 1 >= config.maxTransfers) {
-        continue;
-      }
-
-      const departures = await getStationSchedules(current.stationID);
+      const departures = await getStationSchedules(transferStationID);
       const candidateDepartures = (Array.isArray(departures) ? departures : [])
         .filter((schedule) => {
-          const departAt = toTime(schedule.departs_at);
-          const gap = departAt.getTime() - current.arriveAt.getTime();
+          const secondDepart = toTime(schedule.departs_at);
+          const earliestArrive = firstLegs.reduce((min, leg) => (leg.arriveAt < min ? leg.arriveAt : min), firstLegs[0].arriveAt);
+          const gap = secondDepart.getTime() - earliestArrive.getTime();
           return gap >= config.minTransferMs && gap <= config.maxTransferMs;
         })
         .sort((a, b) => toTime(a.departs_at) - toTime(b.departs_at))
         .slice(0, config.maxCandidateDepartures);
 
-      for (const next of candidateDepartures) {
-        const nextRoute = await getRoute(next.train_id);
-        if (!Array.isArray(nextRoute) || nextRoute.length === 0) {
-          continue;
-        }
-        const nextDepartAt = toTime(next.departs_at);
-        const boardIdx = findStopIndex(nextRoute, current.stationID, new Date(nextDepartAt.getTime() - config.minTransferMs));
-        if (boardIdx < 0) {
-          continue;
-        }
-        const maxForwardStops = Math.min(nextRoute.length, boardIdx + config.maxForwardStops);
-        for (let i = boardIdx + 1; i < maxForwardStops; i++) {
-          const nextStation = String(nextRoute[i].station_id || "").toUpperCase();
-          if (!nextStation || current.visited.has(nextStation)) {
-            continue;
-          }
-          const nextArriveAt = getStopTime(nextRoute[i]);
-          const nextLeg = {
-            trainId: next.train_id,
-            line: next.line,
-            from: current.stationID,
-            to: nextStation,
-            departAt: nextDepartAt,
-            arriveAt: nextArriveAt,
-          };
-          const nextVisited = new Set(current.visited);
-          nextVisited.add(nextStation);
-          queue.push({
-            stationID: nextStation,
-            arriveAt: nextArriveAt,
-            legs: [...legs, nextLeg],
-            visited: nextVisited,
-          });
-          if (queue.length >= config.maxQueueSize) {
-            truncated = true;
-            break;
-          }
-        }
-        if (queue.length >= config.maxQueueSize) {
+      for (const second of candidateDepartures) {
+        expandedStates += 1;
+        if (Date.now() - startedAt > config.maxRuntimeMs || expandedStates >= config.maxExpandedStates) {
           truncated = true;
           break;
         }
+        const secondDepartAt = toTime(second.departs_at);
+        const secondRoute = await getRoute(second.train_id);
+        const secondForwardStops = extractForwardStops(
+          secondRoute,
+          transferStationID,
+          new Date(secondDepartAt.getTime() - config.minTransferMs),
+          config.maxForwardStops,
+          second.route,
+          secondDepartAt,
+        );
+        const toStop = secondForwardStops.find((stop) => stop.stationID === toID);
+        if (!toStop) {
+          continue;
+        }
+
+        for (const firstLeg of firstLegs) {
+          const transferGap = secondDepartAt.getTime() - firstLeg.arriveAt.getTime();
+          if (transferGap < config.minTransferMs || transferGap > config.maxTransferMs) {
+            continue;
+          }
+          const secondLeg = {
+            trainId: second.train_id,
+            line: second.line,
+            from: transferStationID,
+            to: toID,
+            departAt: secondDepartAt,
+            arriveAt: toStop.arriveAt,
+          };
+          pushUniqueOption(oneTransferOptions, oneTransferSeen, {
+            legs: [firstLeg, secondLeg],
+            departAt: firstLeg.departAt,
+            arriveAt: secondLeg.arriveAt,
+            durationMinutes: diffMinutes(firstLeg.departAt, secondLeg.arriveAt),
+          });
+          if (oneTransferOptions.length >= config.maxResults * 4) {
+            break;
+          }
+        }
+        if (oneTransferOptions.length >= config.maxResults * 4) {
+          break;
+        }
+      }
+      if (truncated || oneTransferOptions.length >= config.maxResults * 4) {
+        break;
       }
     }
 
     return {
-      options: finalizeOptions(options, config.maxResults),
+      options: finalizeOptions(oneTransferOptions, config.maxResults),
       stats: { expandedStates, truncated },
     };
   }
