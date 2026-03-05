@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/models"
-	migrations "github.com/comuline/api/migrations"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/models"
+	migrations "github.com/comu/api/migrations"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"

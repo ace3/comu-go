@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/comuline/api/internal/cache"
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/sync"
+	"github.com/comu/api/internal/cache"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/sync"
 	"gorm.io/gorm"
 )
 

@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "description": "Indonesian KRL Commuter Line Schedule API",
-    "title": "Comuline API",
+    "title": "Comu API",
     "contact": {},
     "version": "1.0"
   },

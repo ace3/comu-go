@@ -1,11 +1,11 @@
-app = "comuline-api"
+app = "comu-api"
 primary_region = "sin"
 
 [build]
 
 [env]
   PORT = "8080"
-  COMULINE_ENV = "production"
+  COMU_ENV = "production"
 
 [http_service]
   internal_port = 8080

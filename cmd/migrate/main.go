@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/database"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/database"
 )
 
 func main() {

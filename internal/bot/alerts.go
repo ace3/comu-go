@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/models"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )

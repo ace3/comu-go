@@ -1,7 +1,7 @@
-// @title           Comuline API
+// @title           Comu API
 // @version         1.0
 // @description     Indonesian KRL Commuter Line Schedule API
-// @host            api.comuline.com
+// @host            api.comu.com
 // @BasePath        /
 package main
 
@@ -14,13 +14,13 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/comuline/api/docs"
-	"github.com/comuline/api/internal/cache"
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/database"
-	"github.com/comuline/api/internal/handlers"
-	"github.com/comuline/api/internal/middleware"
-	"github.com/comuline/api/internal/scheduler"
+	_ "github.com/comu/api/docs"
+	"github.com/comu/api/internal/cache"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/database"
+	"github.com/comu/api/internal/handlers"
+	"github.com/comu/api/internal/middleware"
+	"github.com/comu/api/internal/scheduler"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -152,7 +152,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("starting Comuline API", "port", cfg.Port, "env", cfg.Env)
+		slog.Info("starting Comu API", "port", cfg.Port, "env", cfg.Env)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)

@@ -9,7 +9,7 @@ import (
 func TestLoad_DefaultValues(t *testing.T) {
 	// Clear env vars
 	os.Unsetenv("PORT")
-	os.Unsetenv("COMULINE_ENV")
+	os.Unsetenv("COMU_ENV")
 
 	cfg := Load()
 
@@ -23,14 +23,14 @@ func TestLoad_DefaultValues(t *testing.T) {
 
 func TestLoad_CustomValues(t *testing.T) {
 	os.Setenv("PORT", "9090")
-	os.Setenv("COMULINE_ENV", "production")
+	os.Setenv("COMU_ENV", "production")
 	os.Setenv("DATABASE_URL", "postgres://test")
 	os.Setenv("REDIS_URL", "redis://test")
 	os.Setenv("KAI_AUTH_TOKEN", "test-token")
 	os.Setenv("SYNC_SECRET", "my-secret")
 	defer func() {
 		os.Unsetenv("PORT")
-		os.Unsetenv("COMULINE_ENV")
+		os.Unsetenv("COMU_ENV")
 		os.Unsetenv("DATABASE_URL")
 		os.Unsetenv("REDIS_URL")
 		os.Unsetenv("KAI_AUTH_TOKEN")

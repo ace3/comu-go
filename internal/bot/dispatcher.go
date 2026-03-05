@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comuline/api/internal/bot/i18n"
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/bot/i18n"
+	"github.com/comu/api/internal/models"
 	"gorm.io/gorm"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/models"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

@@ -1,4 +1,4 @@
-# Comuline API
+# Comu API
 
 Go port of [comuline/api](https://github.com/comuline/api) — Indonesian KRL Commuter Line and MRT Jakarta schedule data, plus a Telegram bot for commuters. Built with Gin + GORM.
 
@@ -47,7 +47,7 @@ Open `.env` and fill in your values:
 ```env
 DATABASE_URL=postgres://comu:comu@localhost:5432/comuapi
 REDIS_URL=redis://localhost:6379
-COMULINE_ENV=development
+COMU_ENV=development
 KAI_AUTH_TOKEN=<paste your token here>
 PORT=8080
 SYNC_SECRET=<optional secret for POST /sync endpoint>

@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/comuline/api/internal/bot"
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/database"
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/bot"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/database"
+	"github.com/comu/api/internal/models"
 	"github.com/redis/go-redis/v9"
 )
 

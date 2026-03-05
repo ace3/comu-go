@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/models"
 	"gorm.io/datatypes"
 )
 

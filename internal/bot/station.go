@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/comuline/api/internal/models"
+	"github.com/comu/api/internal/models"
 )
 
 // FindStation performs a fuzzy/case-insensitive search for KRL stations by name or code.

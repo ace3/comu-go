@@ -1,4 +1,4 @@
-module github.com/comuline/api
+module github.com/comu/api
 
 go 1.24.0
 

@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/comuline/api/internal/models"
-	"github.com/comuline/api/internal/response"
+	"github.com/comu/api/internal/models"
+	"github.com/comu/api/internal/response"
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 	"gorm.io/driver/sqlite"

@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This document covers all supported deployment methods for Comuline API and the Telegram bot.
+This document covers all supported deployment methods for Comu API and the Telegram bot.
 
 ---
 
@@ -24,7 +24,7 @@ All deployment methods rely on the same set of environment variables.
 | `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
 | `REDIS_URL` | ✅ | — | Redis connection string |
 | `KAI_AUTH_TOKEN` | ✅ (sync only) | — | Bearer token from KCI website (for data sync) |
-| `COMULINE_ENV` | — | `development` | Set to `production` for JSON logs and Gin release mode |
+| `COMU_ENV` | — | `development` | Set to `production` for JSON logs and Gin release mode |
 | `PORT` | — | `8080` | HTTP port for the API server |
 | `SYNC_SECRET` | — | — | Secret for `POST /sync` endpoint. Omit to disable auth. |
 | `TELEGRAM_TOKEN` | ✅ (bot only) | — | BotFather token for the Telegram bot |
@@ -71,9 +71,9 @@ Uses `docker-compose.prod.yml` which runs everything in containers: API, bot, Po
 **1. Copy files to the server**
 
 ```bash
-scp -r . user@your-server:/opt/comuline
+scp -r . user@your-server:/opt/comu
 ssh user@your-server
-cd /opt/comuline
+cd /opt/comu
 ```
 
 **2. Create your `.env` file**
@@ -87,7 +87,7 @@ Edit `.env`:
 ```env
 DATABASE_URL=postgres://comu:yourpassword@postgres:5432/comuapi
 REDIS_URL=redis://redis:6379
-COMULINE_ENV=production
+COMU_ENV=production
 KAI_AUTH_TOKEN=your_token_here
 PORT=8080
 SYNC_SECRET=a-strong-random-secret
@@ -203,8 +203,8 @@ flyctl auth login
 **1. Provision a Postgres database**
 
 ```bash
-flyctl postgres create --name comuline-db --region sin
-flyctl postgres attach comuline-db --app comuline-api
+flyctl postgres create --name comu-db --region sin
+flyctl postgres attach comu-db --app comu-api
 ```
 
 This sets `DATABASE_URL` automatically as a secret.
@@ -212,7 +212,7 @@ This sets `DATABASE_URL` automatically as a secret.
 **2. Provision Redis**
 
 ```bash
-flyctl redis create --name comuline-redis --region sin
+flyctl redis create --name comu-redis --region sin
 ```
 
 Copy the connection string and set it as a secret:
@@ -228,7 +228,7 @@ flyctl secrets set \
   KAI_AUTH_TOKEN="your_token_here" \
   SYNC_SECRET="a-strong-random-secret" \
   TELEGRAM_TOKEN="your_bot_token_here" \
-  COMULINE_ENV="production" \
+  COMU_ENV="production" \
   TIMEZONE="Asia/Jakarta" \
   AUTO_SYNC="true"
 ```
@@ -246,7 +246,7 @@ flyctl deploy
 ```bash
 flyctl ssh console -C "wget -qO- http://localhost:8080/status"
 
-curl -X POST https://comuline-api.fly.dev/sync \
+curl -X POST https://comu-api.fly.dev/sync \
   -H "X-Sync-Secret: a-strong-random-secret"
 ```
 
@@ -284,7 +284,7 @@ In the Render dashboard: New → Redis. Copy the internal connection string.
 - **Build command:** `go build -o bin/api ./cmd/api`
 - **Start command:** `./bin/api`
 - **Environment:** set all variables from the [Environment Variables](#environment-variables) table
-- Set `COMULINE_ENV=production`
+- Set `COMU_ENV=production`
 
 **4. Deploy the bot (Background Worker)**
 

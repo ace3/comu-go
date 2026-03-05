@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/comuline/api/internal/cache"
-	"github.com/comuline/api/internal/models"
-	"github.com/comuline/api/internal/response"
+	"github.com/comu/api/internal/cache"
+	"github.com/comu/api/internal/models"
+	"github.com/comu/api/internal/response"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )

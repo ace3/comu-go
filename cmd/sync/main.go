@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/comuline/api/internal/config"
-	"github.com/comuline/api/internal/database"
-	syncer "github.com/comuline/api/internal/sync"
+	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/database"
+	syncer "github.com/comu/api/internal/sync"
 )
 
 func main() {

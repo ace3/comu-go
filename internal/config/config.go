@@ -30,7 +30,7 @@ func Load() *Config {
 		port = "8080"
 	}
 
-	env := os.Getenv("COMULINE_ENV")
+	env := os.Getenv("COMU_ENV")
 	if env == "" {
 		env = "development"
 	}

@@ -84,7 +84,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Comuline API",
+	Title:            "Comu API",
 	Description:      "Indonesian KRL Commuter Line Schedule API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
