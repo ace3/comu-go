@@ -37,6 +37,9 @@ func main() {
 
 	db := database.Init(cfg)
 	c := cache.New(cfg.RedisURL)
+	if err := backfillFromDataIfEmpty(db, os.Getenv("BACKFILL_DATA_DIR")); err != nil {
+		slog.Error("startup backfill failed", "error", err)
+	}
 	if err := ensureInitialStationData(cfg, db, c, scheduler.RunNow); err != nil {
 		slog.Error("initial station sync failed", "error", err)
 	}

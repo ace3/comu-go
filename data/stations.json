@@ -1,0 +1,1145 @@
+[
+  {
+    "uid": "ancol",
+    "id": "AC",
+    "name": "Ancol",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.406178+00"
+  },
+  {
+    "uid": "angke",
+    "id": "AK",
+    "name": "Angke",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.417759+00"
+  },
+  {
+    "uid": "asean",
+    "id": "ASN",
+    "name": "ASEAN",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"26\", \"order\": 7, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.878344+00"
+  },
+  {
+    "uid": "bandara-soekarno-hatta",
+    "id": "BANDARA",
+    "name": "Bandara Soekarno Hatta",
+    "type": "KRL",
+    "metadata": "{\"daop\": 1, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.527301+00"
+  },
+  {
+    "uid": "batu-ceper",
+    "id": "BPR",
+    "name": "Batu Ceper",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.431733+00"
+  },
+  {
+    "uid": "bekasi",
+    "id": "BKS",
+    "name": "Bekasi",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.423042+00"
+  },
+  {
+    "uid": "bekasi-timur",
+    "id": "BKST",
+    "name": "Bekasi Timur",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.425053+00"
+  },
+  {
+    "uid": "bendungan-hilir",
+    "id": "BNH",
+    "name": "Bendungan Hilir",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"29\", \"order\": 10, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.882707+00"
+  },
+  {
+    "uid": "blok-a",
+    "id": "BLA",
+    "name": "Blok A",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"24\", \"order\": 5, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.875675+00"
+  },
+  {
+    "uid": "blok-m-bca",
+    "id": "BLM",
+    "name": "Blok M BCA",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"25\", \"order\": 6, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.877209+00"
+  },
+  {
+    "uid": "bogor",
+    "id": "BOO",
+    "name": "Bogor",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.430203+00"
+  },
+  {
+    "uid": "bojong-indah",
+    "id": "BOI",
+    "name": "Bojong Indah",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.427884+00"
+  },
+  {
+    "uid": "bojonggede",
+    "id": "BJD",
+    "name": "Bojonggede",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.420923+00"
+  },
+  {
+    "uid": "brambanan",
+    "id": "BBN",
+    "name": "Brambanan",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.507684+00"
+  },
+  {
+    "uid": "buaran",
+    "id": "BUA",
+    "name": "Buaran",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.433082+00"
+  },
+  {
+    "uid": "bundaran-hi",
+    "id": "BHI",
+    "name": "Bundaran HI",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"31\", \"order\": 13, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.896781+00"
+  },
+  {
+    "uid": "cakung",
+    "id": "CUK",
+    "name": "Cakung",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.447184+00"
+  },
+  {
+    "uid": "catang",
+    "id": "CT",
+    "name": "Catang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.520522+00"
+  },
+  {
+    "uid": "cawang",
+    "id": "CW",
+    "name": "Cawang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.448235+00"
+  },
+  {
+    "uid": "ceper",
+    "id": "CE",
+    "name": "Ceper",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.508492+00"
+  },
+  {
+    "uid": "cibinong",
+    "id": "CBN",
+    "name": "Cibinong",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.434448+00"
+  },
+  {
+    "uid": "cibitung",
+    "id": "CIT",
+    "name": "Cibitung",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.437228+00"
+  },
+  {
+    "uid": "cicayur",
+    "id": "CC",
+    "name": "Cicayur",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.435683+00"
+  },
+  {
+    "uid": "cikampek",
+    "id": "CKP",
+    "name": "Cikampek",
+    "type": "KRL",
+    "metadata": "{\"daop\": 1, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.527994+00"
+  },
+  {
+    "uid": "cikarang",
+    "id": "CKR",
+    "name": "Cikarang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.440735+00"
+  },
+  {
+    "uid": "cikeusal",
+    "id": "CKL",
+    "name": "Cikeusal",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.521172+00"
+  },
+  {
+    "uid": "cikini",
+    "id": "CKI",
+    "name": "Cikini",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.439579+00"
+  },
+  {
+    "uid": "cikoya",
+    "id": "CKY",
+    "name": "Cikoya",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.441838+00"
+  },
+  {
+    "uid": "cilebut",
+    "id": "CLT",
+    "name": "Cilebut",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.442954+00"
+  },
+  {
+    "uid": "cilegon",
+    "id": "CLG",
+    "name": "Cilegon",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.525321+00"
+  },
+  {
+    "uid": "cilejit",
+    "id": "CJT",
+    "name": "Cilejit",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.43843+00"
+  },
+  {
+    "uid": "cipete-raya",
+    "id": "CPR",
+    "name": "Cipete Raya",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"22\", \"order\": 3, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.871966+00"
+  },
+  {
+    "uid": "cisauk",
+    "id": "CSK",
+    "name": "Cisauk",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.443954+00"
+  },
+  {
+    "uid": "citayam",
+    "id": "CTA",
+    "name": "Citayam",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.444851+00"
+  },
+  {
+    "uid": "citeras",
+    "id": "CTR",
+    "name": "Citeras",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.445862+00"
+  },
+  {
+    "uid": "daru",
+    "id": "DAR",
+    "name": "Daru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.449339+00"
+  },
+  {
+    "uid": "delanggu",
+    "id": "DL",
+    "name": "Delanggu",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.509264+00"
+  },
+  {
+    "uid": "depok",
+    "id": "DP",
+    "name": "Depok",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.450307+00"
+  },
+  {
+    "uid": "depok-baru",
+    "id": "DPB",
+    "name": "Depok Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.451309+00"
+  },
+  {
+    "uid": "dukuh-atas-bni",
+    "id": "DKA",
+    "name": "Dukuh Atas BNI",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"38\", \"order\": 12, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.886652+00"
+  },
+  {
+    "uid": "duren-kalibata",
+    "id": "DRN",
+    "name": "Duren Kalibata",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.452423+00"
+  },
+  {
+    "uid": "duri",
+    "id": "DU",
+    "name": "Duri",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.453471+00"
+  },
+  {
+    "uid": "fatmawati-indomaret",
+    "id": "FTM",
+    "name": "Fatmawati Indomaret",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"21\", \"order\": 2, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.869409+00"
+  },
+  {
+    "uid": "gang-sentiong",
+    "id": "GST",
+    "name": "Gang Sentiong",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.456472+00"
+  },
+  {
+    "uid": "gawok",
+    "id": "GW",
+    "name": "Gawok",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.510124+00"
+  },
+  {
+    "uid": "gondangdia",
+    "id": "GDD",
+    "name": "Gondangdia",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.454509+00"
+  },
+  {
+    "uid": "grogol",
+    "id": "GGL",
+    "name": "Grogol",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.455521+00"
+  },
+  {
+    "uid": "haji-nawi",
+    "id": "HJN",
+    "name": "Haji Nawi",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"23\", \"order\": 4, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.87406+00"
+  },
+  {
+    "uid": "istora-mandiri",
+    "id": "IST",
+    "name": "Istora Mandiri",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"28\", \"order\": 9, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.880791+00"
+  },
+  {
+    "uid": "jakarta-kota",
+    "id": "JAKK",
+    "name": "Jakarta Kota",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.457477+00"
+  },
+  {
+    "uid": "jambu-baru",
+    "id": "JBU",
+    "name": "Jambu Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.519838+00"
+  },
+  {
+    "uid": "jatake",
+    "id": "JTK",
+    "name": "Jatake",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.458736+00"
+  },
+  {
+    "uid": "jatinegara",
+    "id": "JNG",
+    "name": "Jatinegara",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.467723+00"
+  },
+  {
+    "uid": "jayakarta",
+    "id": "JAY",
+    "name": "Jayakarta",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.464215+00"
+  },
+  {
+    "uid": "jenar",
+    "id": "JN",
+    "name": "Jenar",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.511014+00"
+  },
+  {
+    "uid": "juanda",
+    "id": "JUA",
+    "name": "Juanda",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.468989+00"
+  },
+  {
+    "uid": "jurang-mangu",
+    "id": "JMU",
+    "name": "Jurang Mangu",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.466605+00"
+  },
+  {
+    "uid": "kalideres",
+    "id": "KDS",
+    "name": "Kalideres",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.47224+00"
+  },
+  {
+    "uid": "kampung-bandan",
+    "id": "KPB",
+    "name": "Kampung Bandan",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.477201+00"
+  },
+  {
+    "uid": "karangantu",
+    "id": "KRA",
+    "name": "Karangantu",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.523155+00"
+  },
+  {
+    "uid": "karet",
+    "id": "KAT",
+    "name": "Karet",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.470285+00"
+  },
+  {
+    "uid": "kebayoran",
+    "id": "KBY",
+    "name": "Kebayoran",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.471302+00"
+  },
+  {
+    "uid": "kemayoran",
+    "id": "KMO",
+    "name": "Kemayoran",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.475139+00"
+  },
+  {
+    "uid": "klaten",
+    "id": "KT",
+    "name": "Klaten",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.511704+00"
+  },
+  {
+    "uid": "klender",
+    "id": "KLD",
+    "name": "Klender",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.473109+00"
+  },
+  {
+    "uid": "klender-baru",
+    "id": "KLDB",
+    "name": "Klender Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.474108+00"
+  },
+  {
+    "uid": "kramat",
+    "id": "KMT",
+    "name": "Kramat",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.476076+00"
+  },
+  {
+    "uid": "kranji",
+    "id": "KRI",
+    "name": "Kranji",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.478342+00"
+  },
+  {
+    "uid": "krenceng",
+    "id": "KEN",
+    "name": "Krenceng",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.52603+00"
+  },
+  {
+    "uid": "kutoarjo",
+    "id": "KTA",
+    "name": "Kutoarjo",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.512392+00"
+  },
+  {
+    "uid": "lebak-bulus-grab",
+    "id": "LBB",
+    "name": "Lebak Bulus Grab",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"20\", \"order\": 1, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.865749+00"
+  },
+  {
+    "uid": "lempuyangan",
+    "id": "LPN",
+    "name": "Lempuyangan",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.513033+00"
+  },
+  {
+    "uid": "lenteng-agung",
+    "id": "LNA",
+    "name": "Lenteng Agung",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.479295+00"
+  },
+  {
+    "uid": "maguwo",
+    "id": "MGW",
+    "name": "Maguwo",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.513744+00"
+  },
+  {
+    "uid": "maja",
+    "id": "MJ",
+    "name": "Maja",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.481078+00"
+  },
+  {
+    "uid": "mangga-besar",
+    "id": "MGB",
+    "name": "Mangga Besar",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.480174+00"
+  },
+  {
+    "uid": "manggarai",
+    "id": "MRI",
+    "name": "Manggarai",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.482795+00"
+  },
+  {
+    "uid": "matraman",
+    "id": "MTR",
+    "name": "Matraman",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.481973+00"
+  },
+  {
+    "uid": "merak",
+    "id": "MER",
+    "name": "Merak",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.526679+00"
+  },
+  {
+    "uid": "metland-telagamurni",
+    "id": "TLM",
+    "name": "Metland Telagamurni",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.483665+00"
+  },
+  {
+    "uid": "nambo",
+    "id": "NMO",
+    "name": "Nambo",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.485028+00"
+  },
+  {
+    "uid": "palmerah",
+    "id": "PLM",
+    "name": "Palmerah",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.487916+00"
+  },
+  {
+    "uid": "palur",
+    "id": "PL",
+    "name": "Palur",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.518387+00"
+  },
+  {
+    "uid": "parung-panjang",
+    "id": "PRP",
+    "name": "Parung Panjang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.48988+00"
+  },
+  {
+    "uid": "pasar-minggu",
+    "id": "PSM",
+    "name": "Pasar Minggu",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.491685+00"
+  },
+  {
+    "uid": "pasar-minggu-baru",
+    "id": "PSMB",
+    "name": "Pasar Minggu Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.492261+00"
+  },
+  {
+    "uid": "pasar-senen",
+    "id": "PSE",
+    "name": "Pasar Senen",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.490488+00"
+  },
+  {
+    "uid": "pesing",
+    "id": "PSG",
+    "name": "Pesing",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.491061+00"
+  },
+  {
+    "uid": "pondok-cina",
+    "id": "POC",
+    "name": "Pondok Cina",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.488574+00"
+  },
+  {
+    "uid": "pondok-jati",
+    "id": "POK",
+    "name": "Pondok Jati",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.489268+00"
+  },
+  {
+    "uid": "pondok-rajeg",
+    "id": "PDRG",
+    "name": "Pondok Rajeg",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.485728+00"
+  },
+  {
+    "uid": "pondok-ranji",
+    "id": "PDJ",
+    "name": "Pondok Ranji",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.486572+00"
+  },
+  {
+    "uid": "poris",
+    "id": "PI",
+    "name": "Poris",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.487269+00"
+  },
+  {
+    "uid": "purwakarta",
+    "id": "PWK",
+    "name": "Purwakarta",
+    "type": "KRL",
+    "metadata": "{\"daop\": 2, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.528668+00"
+  },
+  {
+    "uid": "purwosari",
+    "id": "PWS",
+    "name": "Purwosari",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.514392+00"
+  },
+  {
+    "uid": "rajawali",
+    "id": "RJW",
+    "name": "Rajawali",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.49287+00"
+  },
+  {
+    "uid": "rangkasbitung",
+    "id": "RK",
+    "name": "Rangkasbitung",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.52388+00"
+  },
+  {
+    "uid": "rawa-buaya",
+    "id": "RW",
+    "name": "Rawa Buaya",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.494246+00"
+  },
+  {
+    "uid": "rawa-buntu",
+    "id": "RU",
+    "name": "Rawa Buntu",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.493567+00"
+  },
+  {
+    "uid": "sawah-besar",
+    "id": "SW",
+    "name": "Sawah Besar",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.497225+00"
+  },
+  {
+    "uid": "senayan-mastercard",
+    "id": "SNY",
+    "name": "Senayan Mastercard",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"27\", \"order\": 8, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.879509+00"
+  },
+  {
+    "uid": "serang",
+    "id": "SG",
+    "name": "Serang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 0}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.522472+00"
+  },
+  {
+    "uid": "serpong",
+    "id": "SRP",
+    "name": "Serpong",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.495444+00"
+  },
+  {
+    "uid": "setiabudi-astra",
+    "id": "STB",
+    "name": "Setiabudi Astra",
+    "type": "MRT",
+    "metadata": "{\"nid\": \"30\", \"order\": 11, \"origin\": {\"color\": \"#DD0067\"}}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:44.884168+00"
+  },
+  {
+    "uid": "solo-balapan",
+    "id": "SLO",
+    "name": "Solo Balapan",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.515073+00"
+  },
+  {
+    "uid": "solo-jebres",
+    "id": "SK",
+    "name": "Solo Jebres",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.519101+00"
+  },
+  {
+    "uid": "srowot",
+    "id": "SWT",
+    "name": "Srowot",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.515747+00"
+  },
+  {
+    "uid": "sudimara",
+    "id": "SDM",
+    "name": "Sudimara",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.494882+00"
+  },
+  {
+    "uid": "sudirman",
+    "id": "SUD",
+    "name": "Sudirman",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.496644+00"
+  },
+  {
+    "uid": "sudirman-baru",
+    "id": "SUDB",
+    "name": "Sudirman Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.496048+00"
+  },
+  {
+    "uid": "taman-kota",
+    "id": "TKO",
+    "name": "Taman Kota",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.50155+00"
+  },
+  {
+    "uid": "tambun",
+    "id": "TB",
+    "name": "Tambun",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.497973+00"
+  },
+  {
+    "uid": "tanah-abang",
+    "id": "THB",
+    "name": "Tanah Abang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.500828+00"
+  },
+  {
+    "uid": "tanah-tinggi",
+    "id": "THI",
+    "name": "Tanah Tinggi",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.505173+00"
+  },
+  {
+    "uid": "tangerang",
+    "id": "TNG",
+    "name": "Tangerang",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.502271+00"
+  },
+  {
+    "uid": "tanjung-barat",
+    "id": "TNT",
+    "name": "Tanjung Barat",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.503079+00"
+  },
+  {
+    "uid": "tanjung-priok",
+    "id": "TPK",
+    "name": "Tanjung Priok",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.50405+00"
+  },
+  {
+    "uid": "tebet",
+    "id": "TEB",
+    "name": "Tebet",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.498557+00"
+  },
+  {
+    "uid": "tenjo",
+    "id": "TEJ",
+    "name": "Tenjo",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.499366+00"
+  },
+  {
+    "uid": "tigaraksa",
+    "id": "TGS",
+    "name": "Tigaraksa",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.500151+00"
+  },
+  {
+    "uid": "tonjong-baru",
+    "id": "TOJB",
+    "name": "Tonjong Baru",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.524592+00"
+  },
+  {
+    "uid": "univ.-indonesia",
+    "id": "UI",
+    "name": "Univ. Indonesia",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.505912+00"
+  },
+  {
+    "uid": "univ.-pancasila",
+    "id": "UP",
+    "name": "Univ. Pancasila",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.506671+00"
+  },
+  {
+    "uid": "walantaka",
+    "id": "WLT",
+    "name": "Walantaka",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.521815+00"
+  },
+  {
+    "uid": "wates",
+    "id": "WT",
+    "name": "Wates",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.517044+00"
+  },
+  {
+    "uid": "wojo",
+    "id": "WJ",
+    "name": "Wojo",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.516393+00"
+  },
+  {
+    "uid": "yogyakarta",
+    "id": "YK",
+    "name": "Yogyakarta",
+    "type": "KRL",
+    "metadata": "{\"daop\": 0, \"fg_enable\": 1}",
+    "created_at": "0001-01-01 00:00:00+00",
+    "updated_at": "2026-03-05 05:10:13.517695+00"
+  }
+]
