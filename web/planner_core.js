@@ -69,10 +69,10 @@
       return transferDiff;
     }
 
-    // Primary ordering: most recent departure first.
-    const departDiff = b.departAt - a.departAt;
-    if (departDiff !== 0) {
-      return departDiff;
+    // Primary ordering: fastest arrival first.
+    const arriveDiff = a.arriveAt - b.arriveAt;
+    if (arriveDiff !== 0) {
+      return arriveDiff;
     }
 
     const waitRankDiff = transferWaitRank(a) - transferWaitRank(b);
@@ -89,10 +89,9 @@
     if (waitMinutesDiff !== 0) {
       return waitMinutesDiff;
     }
-
-    const arriveDiff = a.arriveAt - b.arriveAt;
-    if (arriveDiff !== 0) {
-      return arriveDiff;
+    const departDiff = b.departAt - a.departAt;
+    if (departDiff !== 0) {
+      return departDiff;
     }
 
     return a.durationMinutes - b.durationMinutes;
@@ -152,19 +151,10 @@
     if (candidate.legs.length !== challenger.legs.length || candidate.legs.length < 2) {
       return false;
     }
-    if (challenger.departAt.getTime() !== candidate.departAt.getTime()) {
-      return false;
-    }
-
-    const candidateWaitRank = transferWaitRank(candidate);
-    const challengerWaitRank = transferWaitRank(challenger);
-    if (challengerWaitRank > candidateWaitRank) {
-      return false;
-    }
-
+    const departsNoEarlier = challenger.departAt >= candidate.departAt;
     const arrivesNoLater = challenger.arriveAt <= candidate.arriveAt;
-    const strictlyBetter = challengerWaitRank < candidateWaitRank || challenger.arriveAt < candidate.arriveAt;
-    return arrivesNoLater && strictlyBetter;
+    const strictlyBetter = challenger.departAt > candidate.departAt || challenger.arriveAt < candidate.arriveAt;
+    return departsNoEarlier && arrivesNoLater && strictlyBetter;
   }
 
   function filterDominatedOptions(options) {

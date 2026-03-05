@@ -108,7 +108,7 @@ test("Rawa Buaya -> Sudirman Baru returns one transfer at Duri", async () => {
   assert.equal(first.legs[1].to, "SUDB");
 });
 
-test("one-transfer options are ordered by latest departure first, then transfer quality", async () => {
+test("one-transfer options are ordered by fastest arrival first", async () => {
   const customRoutesByTrainID = {
     F1: [
       stop("RW", "14:00"),
@@ -162,17 +162,12 @@ test("one-transfer options are ordered by latest departure first, then transfer 
     config: { maxResults: 6 },
   });
 
-  assert.equal(result.options.length, 3);
+  assert.equal(result.options.length, 1);
   assert.equal(result.options[0].legs[0].trainId, "F2");
-  assert.equal(result.options[1].legs[0].trainId, "F2");
-  assert.equal(result.options[2].legs[0].trainId, "F1");
-
-  assert.equal(result.options[0].legs[1].trainId, "SAFE");
-  assert.equal(result.options[1].legs[1].trainId, "TIGHT");
-  assert.equal(result.options[2].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[0].legs[1].trainId, "TIGHT");
 });
 
-test("dominates and removes non-optimal options", async () => {
+test("dominates and removes non-optimal options across different departure times", async () => {
   const customRoutesByTrainID = {
     F1: [
       stop("RW", "16:05"),
@@ -185,6 +180,10 @@ test("dominates and removes non-optimal options", async () => {
     FAST: [
       stop("DU", "16:31"),
       stop("SUDB", "17:18"),
+    ],
+    GOOD: [
+      stop("DU", "16:31"),
+      stop("SUDB", "17:46"),
     ],
     SLOW: [
       stop("DU", "16:41"),
@@ -199,6 +198,7 @@ test("dominates and removes non-optimal options", async () => {
     ],
     DU: [
       { train_id: "FAST", line: "Commuter Line Cikarang", departs_at: iso("16:31") },
+      { train_id: "GOOD", line: "Commuter Line Cikarang", departs_at: iso("16:31") },
       { train_id: "SLOW", line: "Commuter Line Cikarang", departs_at: iso("16:41") },
     ],
   };
@@ -217,4 +217,9 @@ test("dominates and removes non-optimal options", async () => {
     (option) => option.legs[0].trainId === "F1" && option.legs[1].trainId === "SLOW",
   );
   assert.equal(hasDominatedSlowOption, false);
+
+  const hasEarlyDepartAndLaterArrival = result.options.some(
+    (option) => option.legs[0].trainId === "F1" && option.legs[1].trainId === "SLOW",
+  );
+  assert.equal(hasEarlyDepartAndLaterArrival, false);
 });
