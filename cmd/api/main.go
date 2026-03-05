@@ -54,9 +54,9 @@ func main() {
 	r.Use(middleware.RequestID())
 	r.Use(middleware.MetricsMiddleware())
 
-	// Root redirect → /docs
+	// Root redirect → /app
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
+		c.Redirect(http.StatusMovedPermanently, "/app")
 	})
 	r.GET("/app", func(c *gin.Context) {
 		c.File("./web/index.html")

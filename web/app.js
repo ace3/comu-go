@@ -1,7 +1,8 @@
 const STORAGE_KEY = "comu.preferred_stations";
 const COOKIE_KEY = "preferred_stations";
 const MAX_STATIONS = 5;
-const WINDOW_MINUTES = 60;
+const WINDOW_BEFORE_MINUTES = 10;
+const WINDOW_AFTER_MINUTES = 60;
 const WIB_ZONE = "Asia/Jakarta";
 const API_BASE = "/v1";
 
@@ -223,27 +224,53 @@ function formatWIBTime(isoValue) {
   }
 }
 
+function titleCase(value) {
+  return value
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function parseDirection(schedule) {
+  const route = String(schedule.route || "").trim();
+  if (route.includes("-")) {
+    const points = route
+      .split("-")
+      .map((part) => titleCase(part.replace(/[_\s]+/g, " ").trim()))
+      .filter(Boolean);
+    if (points.length >= 2) {
+      return { from: points[0], to: points[points.length - 1] };
+    }
+  }
+
+  const from = String(schedule.origin_id || "").trim().toUpperCase();
+  const to = String(schedule.destination_id || "").trim().toUpperCase();
+  return { from, to };
+}
+
 function renderSchedules(data) {
   cardsNode.innerHTML = "";
   windowLabel.textContent = `Window: ${data.window_start_wib} to ${data.window_end_wib}`;
 
   for (const station of data.stations || []) {
-    const card = document.createElement("article");
-    card.className = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+    const card = document.createElement("details");
+    card.className = "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm";
 
-    const title = document.createElement("h3");
-    title.className = "text-base font-bold tracking-tight text-slate-900";
-    title.textContent = stationDisplayName(station.station_id);
-    card.appendChild(title);
+    const summary = document.createElement("summary");
+    summary.className = "cursor-pointer list-none text-base font-bold tracking-tight text-slate-900";
+    const schedules = Array.isArray(station.schedules) ? station.schedules : [];
+    summary.textContent = `${stationDisplayName(station.station_id)} (${schedules.length})`;
+    card.appendChild(summary);
 
     const list = document.createElement("ul");
     list.className = "mt-2 grid gap-2";
 
-    const schedules = Array.isArray(station.schedules) ? station.schedules : [];
     if (schedules.length === 0) {
       const empty = document.createElement("p");
       empty.className = "mt-2 text-sm text-slate-600";
-      empty.textContent = "No departures in +/- 1 hour (WIB).";
+      empty.textContent = "No departures in -10 minutes to +1 hour (WIB).";
       card.appendChild(empty);
     } else {
       for (const schedule of schedules) {
@@ -254,11 +281,21 @@ function renderSchedules(data) {
         time.className = "text-base font-extrabold text-cyan-700";
         time.textContent = formatWIBTime(schedule.departs_at);
 
+        const direction = parseDirection(schedule);
+        const travel = document.createElement("div");
+        travel.className = "mt-0.5 text-sm font-semibold text-slate-800";
+        if (direction.to) {
+          travel.textContent = `To ${direction.to}${direction.from ? ` (from ${direction.from})` : ""}`;
+        } else {
+          travel.textContent = "Direction unavailable";
+        }
+
         const meta = document.createElement("div");
         meta.className = "mt-0.5 text-xs text-slate-600 sm:text-sm";
-        meta.textContent = `${schedule.train_id} | ${schedule.line} | ${schedule.origin_id} -> ${schedule.destination_id}`;
+        meta.textContent = `${schedule.train_id} | ${schedule.line}`;
 
         item.appendChild(time);
+        item.appendChild(travel);
         item.appendChild(meta);
         list.appendChild(item);
       }
@@ -280,9 +317,14 @@ async function loadWindowSchedules() {
   showStatus("Loading schedules...");
 
   try {
+    const windowMinutes = Math.ceil((WINDOW_BEFORE_MINUTES + WINDOW_AFTER_MINUTES) / 2);
+    const atShiftMinutes = WINDOW_AFTER_MINUTES - windowMinutes;
+    const at = new Date(Date.now() + atShiftMinutes * 60 * 1000);
+
     const qs = new URLSearchParams({
       station_ids: preferredStations.join(","),
-      window_minutes: String(WINDOW_MINUTES),
+      window_minutes: String(windowMinutes),
+      at: at.toISOString(),
     });
     const payload = await fetchWithTimeout(`${API_BASE}/schedule/window?${qs.toString()}`);
     renderSchedules(payload.data || {});
