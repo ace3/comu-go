@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -11,16 +12,17 @@ import (
 )
 
 type Config struct {
-	DatabaseURL   string
-	RedisURL      string
-	Port          string
-	Env           string
-	KAIAuthToken  string // initial value loaded from env; use Token() at runtime
-	SyncSecret    string
-	TelegramToken string
-	OpenMeteoBase string
-	Timezone      string
-	AutoSync      bool
+	DatabaseURL     string
+	RedisURL        string
+	Port            string
+	Env             string
+	KAIAuthToken    string // initial value loaded from env; use Token() at runtime
+	SyncSecret      string
+	TelegramToken   string
+	OpenMeteoBase   string
+	Timezone        string
+	AutoSync        bool
+	AdminTelegramID int64 // Telegram user ID to notify on token events
 
 	liveToken atomic.Pointer[string] // hot-reloadable token, set by RotateToken
 }
@@ -68,17 +70,23 @@ func Load() *Config {
 
 	autoSync := os.Getenv("AUTO_SYNC")
 
+	var adminID int64
+	if s := os.Getenv("ADMIN_TELEGRAM_ID"); s != "" {
+		adminID, _ = strconv.ParseInt(s, 10, 64)
+	}
+
 	return &Config{
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		RedisURL:      os.Getenv("REDIS_URL"),
-		Port:          port,
-		Env:           env,
-		KAIAuthToken:  os.Getenv("KAI_AUTH_TOKEN"),
-		SyncSecret:    os.Getenv("SYNC_SECRET"),
-		TelegramToken: os.Getenv("TELEGRAM_TOKEN"),
-		OpenMeteoBase: openMeteoBase,
-		Timezone:      tz,
-		AutoSync:      autoSync == "true" || autoSync == "1",
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		RedisURL:        os.Getenv("REDIS_URL"),
+		Port:            port,
+		Env:             env,
+		KAIAuthToken:    os.Getenv("KAI_AUTH_TOKEN"),
+		SyncSecret:      os.Getenv("SYNC_SECRET"),
+		TelegramToken:   os.Getenv("TELEGRAM_TOKEN"),
+		OpenMeteoBase:   openMeteoBase,
+		Timezone:        tz,
+		AutoSync:        autoSync == "true" || autoSync == "1",
+		AdminTelegramID: adminID,
 	}
 }
 

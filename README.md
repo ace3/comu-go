@@ -226,6 +226,45 @@ make swag
 
 ---
 
+## KAI Auth Token
+
+The `KAI_AUTH_TOKEN` is a JWT Bearer token hardcoded in the KCI website's JavaScript at `https://kci.id/perjalanan-krl/jadwal-kereta`. It typically has a ~1 year validity.
+
+### Automatic rotation
+
+When `AUTO_SYNC=true`, the scheduler automatically:
+
+1. **Checks expiry** — if the token expires within **4 days**, it sends a Telegram warning to `ADMIN_TELEGRAM_ID`
+2. **Fetches the latest token** from the KCI page before every sync run
+3. **Rotates in memory** — if a new token is found on the page, it replaces the live token and notifies the admin
+
+Configure the admin notification:
+
+```env
+ADMIN_TELEGRAM_ID=your_telegram_user_id   # Telegram user ID to receive alerts
+TELEGRAM_TOKEN=your_bot_token  # must be set for notifications to work
+```
+
+### Manual hot-reload (no restart)
+
+If the token expires before the next scheduled sync, rotate it via the API:
+
+```bash
+# 1. Update in memory immediately
+curl -X POST https://your-domain/admin/rotate-token \
+  -H "X-Sync-Secret: your-sync-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "eyJhbGciOi..."}'
+
+# 2. Re-sync with the new token
+curl -X POST https://your-domain/sync \
+  -H "X-Sync-Secret: your-sync-secret"
+```
+
+> The rotated token is in-memory only. Also update `KAI_AUTH_TOKEN` in your `.env` / secrets manager to persist it across restarts.
+
+---
+
 ## Notes
 
 - All API responses use the standard envelope: `{ "metadata": { "success": true }, "data": ... }`
