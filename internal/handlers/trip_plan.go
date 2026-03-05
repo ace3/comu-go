@@ -45,6 +45,16 @@ var terminalCodeByName = map[string]string{
 	"MERAK":               "MRK",
 }
 
+var routeFallbackStopsByKey = map[string][]string{
+	"CIKARANGKAMPUNGBANDANVIAMRI": {"DU"},
+}
+
+var fallbackInsertBeforeCandidates = map[string][]string{
+	"DU":  {"AK", "KPB"},
+	"MRI": {"SUD", "SUDB", "THB", "DU", "AK", "KPB"},
+	"PSE": {"RJW", "KPB"},
+}
+
 type TripPlanHandler struct {
 	db    *gorm.DB
 	cache *cache.Cache
@@ -235,7 +245,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		if len(route) == 0 {
 			continue
 		}
-		route = appendTerminalFallbackStops(route, fromID, first.Route)
+		route = appendRouteFallbackStops(route, fromID, first.Route)
 		fromIdx := findRouteIndex(route, fromID, first.DepartsAt.Add(-tripMinTransfer))
 		if fromIdx < 0 {
 			continue
@@ -392,7 +402,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 				if len(route) == 0 {
 					continue
 				}
-				route = appendTerminalFallbackStops(route, transferID, dep.Route)
+				route = appendRouteFallbackStops(route, transferID, dep.Route)
 				fromIdx := findRouteIndex(route, transferID, dep.DepartsAt.Add(-tripMinTransfer))
 				if fromIdx < 0 {
 					continue
@@ -563,11 +573,11 @@ func parseRouteTerminalID(routeName string) string {
 func appendTerminalFallbackStops(route []models.Schedule, fromID, routeName string) []models.Schedule {
 	terminalID := parseRouteTerminalID(routeName)
 	if terminalID == "" || terminalID == fromID {
-		return route
+		return appendViaFallbackStops(route, routeName)
 	}
 	for _, stop := range route {
 		if strings.ToUpper(stop.StationID) == terminalID {
-			return route
+			return appendViaFallbackStops(route, routeName)
 		}
 	}
 	if len(route) == 0 {
@@ -586,7 +596,135 @@ func appendTerminalFallbackStops(route []models.Schedule, fromID, routeName stri
 		DepartsAt: tail.Add(5 * time.Minute),
 		ArrivesAt: tail.Add(5 * time.Minute),
 	}
-	return append(route, fallback)
+	withTerminal := append(route, fallback)
+	return appendViaFallbackStops(withTerminal, routeName)
+}
+
+func appendRouteFallbackStops(route []models.Schedule, fromID, routeName string) []models.Schedule {
+	return appendTerminalFallbackStops(route, fromID, routeName)
+}
+
+func normalizeRouteKey(value string) string {
+	var b strings.Builder
+	for _, r := range strings.ToUpper(strings.TrimSpace(value)) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func appendViaFallbackStops(route []models.Schedule, routeName string) []models.Schedule {
+	key := normalizeRouteKey(routeName)
+	if key == "" {
+		return route
+	}
+	extraStops := append([]string(nil), routeFallbackStopsByKey[key]...)
+	if strings.Contains(key, "VIAMRI") {
+		extraStops = append(extraStops, "DU", "MRI")
+	}
+	if strings.Contains(key, "VIAPSE") {
+		extraStops = append(extraStops, "PSE")
+	}
+	extraStops = uniqStationIDs(extraStops)
+	if len(extraStops) == 0 {
+		return route
+	}
+
+	withFallbacks := route
+	for _, stationID := range extraStops {
+		withFallbacks = upsertFallbackStop(withFallbacks, stationID, routeName)
+	}
+	return withFallbacks
+}
+
+func uniqStationIDs(stations []string) []string {
+	if len(stations) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(stations))
+	seen := map[string]struct{}{}
+	for _, stationID := range stations {
+		id := strings.ToUpper(strings.TrimSpace(stationID))
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
+}
+
+func upsertFallbackStop(route []models.Schedule, stationID, routeName string) []models.Schedule {
+	if len(route) == 0 || strings.TrimSpace(stationID) == "" {
+		return route
+	}
+	stationID = strings.ToUpper(strings.TrimSpace(stationID))
+	for _, stop := range route {
+		if strings.ToUpper(stop.StationID) == stationID {
+			return route
+		}
+	}
+
+	insertBefore := -1
+	beforeCandidates := fallbackInsertBeforeCandidates[stationID]
+	if len(beforeCandidates) == 0 {
+		beforeCandidates = []string{"AK", "KPB"}
+	}
+	for _, candidate := range beforeCandidates {
+		for i, stop := range route {
+			if strings.ToUpper(stop.StationID) == candidate {
+				insertBefore = i
+				break
+			}
+		}
+		if insertBefore >= 0 {
+			break
+		}
+	}
+
+	newStop := models.Schedule{
+		TrainID: route[len(route)-1].TrainID,
+		Line:    route[len(route)-1].Line,
+		Route:   routeName,
+	}
+	newStop.StationID = stationID
+
+	if insertBefore <= 0 {
+		tail := route[len(route)-1].ArrivesAt
+		if tail.IsZero() {
+			tail = route[len(route)-1].DepartsAt
+		}
+		newStop.DepartsAt = tail.Add(5 * time.Minute)
+		newStop.ArrivesAt = newStop.DepartsAt
+		return append(route, newStop)
+	}
+
+	prev := route[insertBefore-1]
+	next := route[insertBefore]
+	prevT := prev.ArrivesAt
+	if prevT.IsZero() {
+		prevT = prev.DepartsAt
+	}
+	nextT := next.DepartsAt
+	if nextT.IsZero() {
+		nextT = next.ArrivesAt
+	}
+	mid := prevT.Add(nextT.Sub(prevT) / 2)
+	if !nextT.After(prevT) {
+		mid = nextT.Add(-1 * time.Minute)
+	}
+	newStop.DepartsAt = mid
+	newStop.ArrivesAt = mid
+
+	updated := make([]models.Schedule, 0, len(route)+1)
+	updated = append(updated, route[:insertBefore]...)
+	updated = append(updated, newStop)
+	updated = append(updated, route[insertBefore:]...)
+	return updated
 }
 
 func pushOption(options *[]tripPlanOption, seen map[string]struct{}, option tripPlanOption) {

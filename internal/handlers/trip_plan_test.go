@@ -248,6 +248,64 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 		}
 	})
 
+	t.Run("uses cikarang via mri fallback stop at duri for transit", func(t *testing.T) {
+		db4 := setupTestDB(t)
+		h4 := NewTripPlanHandler(db4, nil)
+		rows := []models.Schedule{
+			{ID: "f-sud", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "SUD", DepartsAt: mustWIBTime(t, "20:20"), ArrivesAt: mustWIBTime(t, "20:20")},
+			{ID: "f-thb", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "THB", DepartsAt: mustWIBTime(t, "20:29"), ArrivesAt: mustWIBTime(t, "20:29")},
+			{ID: "f-ak", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "AK", DepartsAt: mustWIBTime(t, "20:40"), ArrivesAt: mustWIBTime(t, "20:40")},
+			{ID: "f-kpb", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "KPB", DepartsAt: mustWIBTime(t, "20:47"), ArrivesAt: mustWIBTime(t, "20:47")},
+			{ID: "g-du", TrainID: "1907A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "DU", DepartsAt: mustWIBTime(t, "20:50"), ArrivesAt: mustWIBTime(t, "20:50")},
+			{ID: "g-rw", TrainID: "1907A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "RW", DepartsAt: mustWIBTime(t, "21:05"), ArrivesAt: mustWIBTime(t, "21:05")},
+		}
+		for _, row := range rows {
+			if err := db4.Create(&row).Error; err != nil {
+				t.Fatalf("seed row %s: %v", row.ID, err)
+			}
+		}
+
+		body := map[string]any{
+			"from_id":        "SUD",
+			"to_id":          "RW",
+			"at":             "2026-03-05T20:05:00+07:00",
+			"window_minutes": 90,
+			"max_results":    8,
+			"max_transfers":  1,
+		}
+		raw, _ := json.Marshal(body)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h4.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if len(resp.Data.Options) == 0 {
+			t.Fatalf("expected at least one option")
+		}
+
+		foundFallbackTransit := false
+		for _, opt := range resp.Data.Options {
+			if len(opt.Legs) < 2 {
+				continue
+			}
+			if opt.Legs[0].TrainID == "5575C" && opt.Legs[0].To == "DU" {
+				foundFallbackTransit = true
+				break
+			}
+		}
+		if !foundFallbackTransit {
+			t.Fatalf("expected option using 5575C with transit stop at DU")
+		}
+	})
+
 	t.Run("marks projected metadata when using future at with snapshot reuse", func(t *testing.T) {
 		body := map[string]any{
 			"from_id":        "RW",
@@ -282,6 +340,77 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 			t.Fatalf("expected options > 0")
 		}
 	})
+}
+
+func TestAppendRouteFallbackStops_InsertsDuriBeforeAngke(t *testing.T) {
+	route := []models.Schedule{
+		{TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", StationID: "SUD", DepartsAt: mustWIBTime(t, "20:20"), ArrivesAt: mustWIBTime(t, "20:20")},
+		{TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", StationID: "THB", DepartsAt: mustWIBTime(t, "20:29"), ArrivesAt: mustWIBTime(t, "20:29")},
+		{TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", StationID: "AK", DepartsAt: mustWIBTime(t, "20:40"), ArrivesAt: mustWIBTime(t, "20:40")},
+		{TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", StationID: "KPB", DepartsAt: mustWIBTime(t, "20:47"), ArrivesAt: mustWIBTime(t, "20:47")},
+	}
+
+	updated := appendRouteFallbackStops(route, "SUD", "CIKARANG-KAMPUNGBANDAN VIA MRI")
+	duIdx := -1
+	akIdx := -1
+	for i, stop := range updated {
+		switch stop.StationID {
+		case "DU":
+			duIdx = i
+		case "AK":
+			akIdx = i
+		}
+	}
+	if duIdx < 0 {
+		t.Fatalf("expected DU to be inserted")
+	}
+	if akIdx < 0 {
+		t.Fatalf("expected AK to exist")
+	}
+	if duIdx >= akIdx {
+		t.Fatalf("expected DU before AK, got duIdx=%d akIdx=%d", duIdx, akIdx)
+	}
+	if updated[duIdx].DepartsAt.Before(updated[duIdx-1].DepartsAt) || updated[duIdx].DepartsAt.After(updated[akIdx].DepartsAt) {
+		t.Fatalf("expected inserted DU time between previous and AK stop")
+	}
+}
+
+func TestAppendRouteFallbackStops_InsertsMRIAndPSEForViaRoutes(t *testing.T) {
+	viaMRIRoute := []models.Schedule{
+		{TrainID: "X1", Line: "Commuter Line Cikarang", Route: "CIKARANG-ANGKE VIA MRI", StationID: "KAT", DepartsAt: mustWIBTime(t, "20:10"), ArrivesAt: mustWIBTime(t, "20:10")},
+		{TrainID: "X1", Line: "Commuter Line Cikarang", Route: "CIKARANG-ANGKE VIA MRI", StationID: "SUD", DepartsAt: mustWIBTime(t, "20:20"), ArrivesAt: mustWIBTime(t, "20:20")},
+		{TrainID: "X1", Line: "Commuter Line Cikarang", Route: "CIKARANG-ANGKE VIA MRI", StationID: "AK", DepartsAt: mustWIBTime(t, "20:40"), ArrivesAt: mustWIBTime(t, "20:40")},
+	}
+	withMRI := appendRouteFallbackStops(viaMRIRoute, "KAT", "CIKARANG-ANGKE VIA MRI")
+	hasMRI := false
+	hasDU := false
+	for _, stop := range withMRI {
+		if stop.StationID == "MRI" {
+			hasMRI = true
+		}
+		if stop.StationID == "DU" {
+			hasDU = true
+		}
+	}
+	if !hasMRI || !hasDU {
+		t.Fatalf("expected VIA MRI route fallback to include MRI and DU, got MRI=%t DU=%t", hasMRI, hasDU)
+	}
+
+	viaPSERoute := []models.Schedule{
+		{TrainID: "Y1", Line: "Commuter Line Cikarang", Route: "BEKASI-KAMPUNGBANDAN VIA PSE", StationID: "KMO", DepartsAt: mustWIBTime(t, "20:10"), ArrivesAt: mustWIBTime(t, "20:10")},
+		{TrainID: "Y1", Line: "Commuter Line Cikarang", Route: "BEKASI-KAMPUNGBANDAN VIA PSE", StationID: "RJW", DepartsAt: mustWIBTime(t, "20:20"), ArrivesAt: mustWIBTime(t, "20:20")},
+	}
+	withPSE := appendRouteFallbackStops(viaPSERoute, "KMO", "BEKASI-KAMPUNGBANDAN VIA PSE")
+	hasPSE := false
+	for _, stop := range withPSE {
+		if stop.StationID == "PSE" {
+			hasPSE = true
+			break
+		}
+	}
+	if !hasPSE {
+		t.Fatalf("expected VIA PSE route fallback to include PSE")
+	}
 }
 
 func loadRealWindowRows(t *testing.T) []models.Schedule {
