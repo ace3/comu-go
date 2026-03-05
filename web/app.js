@@ -22,6 +22,7 @@ const windowLabel = document.getElementById("window-label");
 const cardsNode = document.getElementById("cards");
 const planFrom = document.getElementById("plan-from");
 const planTo = document.getElementById("plan-to");
+const planSwap = document.getElementById("plan-swap");
 const planShowAll = document.getElementById("plan-show-all");
 const planShowLongWait = document.getElementById("plan-show-long-wait");
 const planButton = document.getElementById("plan-trip");
@@ -547,6 +548,17 @@ function populateTripPlannerOptions() {
   }
 }
 
+function swapTripPlannerStations() {
+  const fromValue = String(planFrom.value || "").toUpperCase();
+  const toValue = String(planTo.value || "").toUpperCase();
+  planFrom.value = toValue;
+  planTo.value = fromValue;
+  saveTripPlannerPrefs({
+    fromID: String(planFrom.value || "").toUpperCase(),
+    toID: String(planTo.value || "").toUpperCase(),
+  });
+}
+
 function renderSchedules(data) {
   cardsNode.innerHTML = "";
   windowLabel.textContent = `Window: ${data.window_start_wib} to ${data.window_end_wib}`;
@@ -647,6 +659,9 @@ async function init() {
   stationSearch.addEventListener("input", renderStationPicker);
   planButton.addEventListener("click", generateTripPlan);
   planShowAll.addEventListener("change", populateTripPlannerOptions);
+  if (planSwap) {
+    planSwap.addEventListener("click", swapTripPlannerStations);
+  }
   if (planShowLongWait) {
     planShowLongWait.addEventListener("change", () => {
       saveTripPlannerPrefs({ showLongWait: Boolean(planShowLongWait.checked) });

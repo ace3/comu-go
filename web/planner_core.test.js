@@ -108,7 +108,7 @@ test("Rawa Buaya -> Sudirman Baru returns one transfer at Duri", async () => {
   assert.equal(first.legs[1].to, "SUDB");
 });
 
-test("one-transfer options are ordered by nearest safe transfer before long/tight waits", async () => {
+test("one-transfer options are ordered by latest departure first, then transfer quality", async () => {
   const customRoutesByTrainID = {
     F1: [
       stop("RW", "14:00"),
@@ -162,11 +162,59 @@ test("one-transfer options are ordered by nearest safe transfer before long/tigh
     config: { maxResults: 6 },
   });
 
-  assert.equal(result.options.length, 6);
+  assert.equal(result.options.length, 3);
   assert.equal(result.options[0].legs[0].trainId, "F2");
-  assert.equal(result.options[0].legs[1].trainId, "SAFE");
-  assert.equal(result.options[1].legs[0].trainId, "F1");
-  assert.equal(result.options[1].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[1].legs[0].trainId, "F2");
   assert.equal(result.options[2].legs[0].trainId, "F1");
-  assert.equal(result.options[2].legs[1].trainId, "SAFE");
+
+  assert.equal(result.options[0].legs[1].trainId, "SAFE");
+  assert.equal(result.options[1].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[2].legs[1].trainId, "TIGHT");
+});
+
+test("dominates and removes non-optimal options", async () => {
+  const customRoutesByTrainID = {
+    F1: [
+      stop("RW", "16:05"),
+      stop("DU", "16:21"),
+    ],
+    F2: [
+      stop("RW", "16:22"),
+      stop("DU", "16:38"),
+    ],
+    FAST: [
+      stop("DU", "16:31"),
+      stop("SUDB", "17:18"),
+    ],
+    SLOW: [
+      stop("DU", "16:41"),
+      stop("SUDB", "18:05"),
+    ],
+  };
+
+  const customSchedulesByStation = {
+    RW: [
+      { train_id: "F1", line: "Commuter Line Tangerang", departs_at: iso("16:05") },
+      { train_id: "F2", line: "Commuter Line Tangerang", departs_at: iso("16:22") },
+    ],
+    DU: [
+      { train_id: "FAST", line: "Commuter Line Cikarang", departs_at: iso("16:31") },
+      { train_id: "SLOW", line: "Commuter Line Cikarang", departs_at: iso("16:41") },
+    ],
+  };
+
+  const result = await findTripOptions({
+    fromID: "RW",
+    toID: "SUDB",
+    now: new Date(iso("15:50")),
+    firstLegSchedules: customSchedulesByStation.RW,
+    getRoute: async (trainID) => customRoutesByTrainID[trainID] || [],
+    getStationSchedules: async (stationID) => customSchedulesByStation[stationID] || [],
+    config: { maxResults: 8 },
+  });
+
+  const hasDominatedSlowOption = result.options.some(
+    (option) => option.legs[0].trainId === "F1" && option.legs[1].trainId === "SLOW",
+  );
+  assert.equal(hasDominatedSlowOption, false);
 });

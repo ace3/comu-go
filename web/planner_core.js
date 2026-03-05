@@ -69,6 +69,12 @@
       return transferDiff;
     }
 
+    // Primary ordering: most recent departure first.
+    const departDiff = b.departAt - a.departAt;
+    if (departDiff !== 0) {
+      return departDiff;
+    }
+
     const waitRankDiff = transferWaitRank(a) - transferWaitRank(b);
     if (waitRankDiff !== 0) {
       return waitRankDiff;
@@ -82,12 +88,6 @@
     const waitMinutesDiff = transferWaitMinutes(a) - transferWaitMinutes(b);
     if (waitMinutesDiff !== 0) {
       return waitMinutesDiff;
-    }
-
-    // Most recent departure first within same transfer quality.
-    const departDiff = b.departAt - a.departAt;
-    if (departDiff !== 0) {
-      return departDiff;
     }
 
     const arriveDiff = a.arriveAt - b.arriveAt;
@@ -132,13 +132,60 @@
     if (!Array.isArray(options) || options.length === 0) {
       return [];
     }
-    const sorted = [...options].sort(sortOptions);
+    const optimalOnly = filterDominatedOptions(options);
+    const sorted = [...optimalOnly].sort(sortOptions);
     const direct = sorted.filter((option) => option.legs.length === 1);
     if (direct.length > 0) {
       return direct.slice(0, maxResults);
     }
     const minLegs = sorted[0].legs.length;
     return sorted.filter((option) => option.legs.length === minLegs).slice(0, maxResults);
+  }
+
+  function isDominated(candidate, challenger) {
+    if (!candidate || !challenger) {
+      return false;
+    }
+    if (!Array.isArray(candidate.legs) || !Array.isArray(challenger.legs)) {
+      return false;
+    }
+    if (candidate.legs.length !== challenger.legs.length || candidate.legs.length < 2) {
+      return false;
+    }
+    if (challenger.departAt.getTime() !== candidate.departAt.getTime()) {
+      return false;
+    }
+
+    const candidateWaitRank = transferWaitRank(candidate);
+    const challengerWaitRank = transferWaitRank(challenger);
+    if (challengerWaitRank > candidateWaitRank) {
+      return false;
+    }
+
+    const arrivesNoLater = challenger.arriveAt <= candidate.arriveAt;
+    const strictlyBetter = challengerWaitRank < candidateWaitRank || challenger.arriveAt < candidate.arriveAt;
+    return arrivesNoLater && strictlyBetter;
+  }
+
+  function filterDominatedOptions(options) {
+    const kept = [];
+    for (let i = 0; i < options.length; i++) {
+      const candidate = options[i];
+      let dominated = false;
+      for (let j = 0; j < options.length; j++) {
+        if (i === j) {
+          continue;
+        }
+        if (isDominated(candidate, options[j])) {
+          dominated = true;
+          break;
+        }
+      }
+      if (!dominated) {
+        kept.push(candidate);
+      }
+    }
+    return kept;
   }
 
   function pushUniqueOption(options, seen, option) {
