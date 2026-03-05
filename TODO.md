@@ -194,9 +194,9 @@ GORM currently logs every SQL statement. In production this creates enormous log
 
 The app currently serves plain HTTP. Credentials and data are sent unencrypted.
 
-- Add an Nginx or Caddy service to `docker-compose.prod.yml` as a reverse proxy
-- Caddy is the easiest option — it auto-provisions Let's Encrypt TLS certificates with a one-line `Caddyfile`
-- Expose only ports 80 and 443 publicly; keep `:8080` internal to the Docker network
+- Keep `docker-compose.prod.yml` proxy-agnostic and expose only `app:8080`
+- Terminate TLS outside the app stack (cloud load balancer, ingress, host-level proxy, etc.)
+- Restrict public ingress so only trusted HTTPS entry points can reach `:8080`
 
 ---
 

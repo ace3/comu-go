@@ -58,7 +58,7 @@ Health check: `curl http://localhost:8080/status`
 
 ## VPS / Self-Hosted (Production)
 
-Uses `docker-compose.prod.yml` which runs everything in containers: API, bot, PostgreSQL, Redis, and Caddy (HTTPS reverse proxy).
+Uses `docker-compose.prod.yml` which runs everything in containers: API, bot, PostgreSQL, and Redis.
 
 ### Prerequisites
 
@@ -101,19 +101,14 @@ POSTGRES_PASSWORD=yourpassword
 POSTGRES_DB=comuapi
 ```
 
-**3. Configure HTTPS**
+**3. Configure external HTTPS/TLS (optional)**
 
-Edit `Caddyfile` to set your domain and email:
+This stack now exposes the API directly on port `8080`:
 
-```
-{
-    email your@email.com
-}
+- Endpoint: `http://<your-server-ip-or-domain>:8080`
+- Health check: `http://<your-server-ip-or-domain>:8080/status`
 
-api.yourdomain.com {
-    reverse_proxy app:8080
-}
-```
+If you need HTTPS, terminate TLS outside this compose stack (for example with your cloud load balancer, ingress controller, Traefik, or Nginx on the host).
 
 **4. (Optional) Use Docker secrets for `KAI_AUTH_TOKEN`**
 
@@ -131,7 +126,7 @@ chmod 600 secrets/kai_auth_token.txt
 make prod-up
 ```
 
-This builds the API and bot images, then starts all services (Caddy, app, bot, postgres, redis). Caddy automatically provisions a TLS certificate for your domain.
+This builds the API and bot images, then starts all services (app, bot, postgres, redis).
 
 **6. Sync data**
 
@@ -144,7 +139,7 @@ make sync
 Or trigger it via the API after deploy:
 
 ```bash
-curl -X POST https://api.yourdomain.com/sync \
+curl -X POST http://your-server-ip-or-domain:8080/sync \
   -H "X-Sync-Secret: a-strong-random-secret"
 ```
 
@@ -160,7 +155,7 @@ docker compose -f docker-compose.prod.yml ps
 make prod-logs
 
 # Health check
-curl https://api.yourdomain.com/status
+curl http://your-server-ip-or-domain:8080/status
 ```
 
 ### Useful prod commands
