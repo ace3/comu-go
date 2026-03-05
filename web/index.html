@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comu Schedules</title>
+    <link rel="stylesheet" href="/app/assets/app.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <h1>Comu Schedule</h1>
+        <p>WIB ±1 hour for your preferred stations.</p>
+      </header>
+
+      <section id="picker-view" class="panel hidden" aria-labelledby="picker-title">
+        <h2 id="picker-title">Select Preferred Stations</h2>
+        <p class="hint">Choose 1-5 stations. Saved on this device.</p>
+        <label class="search-wrap" for="station-search">Search station</label>
+        <input id="station-search" type="search" autocomplete="off" placeholder="Type station name or ID" />
+        <div id="selection-count" class="selection-count">0 selected</div>
+        <div id="station-list" class="station-list" role="group" aria-label="Station choices"></div>
+        <button id="save-stations" type="button" class="btn btn-primary" disabled>Save & Continue</button>
+      </section>
+
+      <section id="schedule-view" class="panel hidden" aria-live="polite">
+        <div class="actions">
+          <button id="edit-stations" type="button" class="btn">Edit Stations</button>
+          <button id="refresh-data" type="button" class="btn btn-primary">Refresh</button>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="window-label" class="window"></div>
+        <div id="cards" class="cards"></div>
+      </section>
+    </main>
+
+    <script src="/app/assets/app.js" defer></script>
+  </body>
+</html>

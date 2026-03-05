@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/comu/api/docs"
 	"github.com/comu/api/internal/cache"
 	"github.com/comu/api/internal/config"
 	"github.com/comu/api/internal/database"
@@ -52,6 +51,10 @@ func main() {
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
 	})
+	r.GET("/app", func(c *gin.Context) {
+		c.File("./web/index.html")
+	})
+	r.Static("/app/assets", "./web")
 
 	// Health check with real dependency pings
 	r.GET("/status", func(gc *gin.Context) {
@@ -91,11 +94,18 @@ func main() {
 	})
 
 	// Swagger UI
-	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi")))
 
 	// Raw OpenAPI spec
 	r.GET("/openapi", func(c *gin.Context) {
-		c.File("./docs/swagger.json")
+		scheme := requestScheme(c.Request)
+		doc, err := buildDynamicSwaggerDoc(c.Request.Host, scheme)
+		if err != nil {
+			slog.Error("failed to render dynamic openapi document", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to render openapi"})
+			return
+		}
+		c.Data(http.StatusOK, "application/json; charset=utf-8", doc)
 	})
 
 	// Prometheus metrics
@@ -138,6 +148,7 @@ func main() {
 
 		scheduleH := handlers.NewScheduleHandler(db, c)
 		v1.GET("/schedule/:station_id", scheduleH.GetSchedules)
+		v1.GET("/schedule/window", scheduleH.GetScheduleWindow)
 
 		routeH := handlers.NewRouteHandler(db, c)
 		v1.GET("/route/:train_id", routeH.GetRoute)
