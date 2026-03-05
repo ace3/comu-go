@@ -10,6 +10,9 @@ func TestLoad_DefaultValues(t *testing.T) {
 	// Clear env vars
 	os.Unsetenv("PORT")
 	os.Unsetenv("COMU_ENV")
+	os.Unsetenv("SKIPPED_STATIONS")
+	os.Unsetenv("ON_DEMAND_SYNC_ENABLED")
+	os.Unsetenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES")
 
 	cfg := Load()
 
@@ -18,6 +21,15 @@ func TestLoad_DefaultValues(t *testing.T) {
 	}
 	if cfg.Env != "development" {
 		t.Errorf("expected default env development, got %s", cfg.Env)
+	}
+	if got, want := strings.Join(cfg.SkippedStations, ","), "GGL,CKP,BANDARA,PWK"; got != want {
+		t.Errorf("expected default skipped stations %q, got %q", want, got)
+	}
+	if !cfg.OnDemandSyncEnabled {
+		t.Errorf("expected ON_DEMAND_SYNC_ENABLED default true")
+	}
+	if cfg.OnDemandSyncMinIntervalMinutes != 30 {
+		t.Errorf("expected ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES default 30, got %d", cfg.OnDemandSyncMinIntervalMinutes)
 	}
 }
 
@@ -28,6 +40,9 @@ func TestLoad_CustomValues(t *testing.T) {
 	os.Setenv("REDIS_URL", "redis://test")
 	os.Setenv("KAI_AUTH_TOKEN", "test-token")
 	os.Setenv("SYNC_SECRET", "my-secret")
+	os.Setenv("SKIPPED_STATIONS", "MRI, JAKK ,, BOO")
+	os.Setenv("ON_DEMAND_SYNC_ENABLED", "0")
+	os.Setenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES", "45")
 	defer func() {
 		os.Unsetenv("PORT")
 		os.Unsetenv("COMU_ENV")
@@ -35,6 +50,9 @@ func TestLoad_CustomValues(t *testing.T) {
 		os.Unsetenv("REDIS_URL")
 		os.Unsetenv("KAI_AUTH_TOKEN")
 		os.Unsetenv("SYNC_SECRET")
+		os.Unsetenv("SKIPPED_STATIONS")
+		os.Unsetenv("ON_DEMAND_SYNC_ENABLED")
+		os.Unsetenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES")
 	}()
 
 	cfg := Load()
@@ -50,6 +68,15 @@ func TestLoad_CustomValues(t *testing.T) {
 	}
 	if cfg.SyncSecret != "my-secret" {
 		t.Errorf("expected SYNC_SECRET my-secret, got %s", cfg.SyncSecret)
+	}
+	if got, want := strings.Join(cfg.SkippedStations, ","), "MRI,JAKK,BOO"; got != want {
+		t.Errorf("expected parsed skipped stations %q, got %q", want, got)
+	}
+	if cfg.OnDemandSyncEnabled {
+		t.Errorf("expected ON_DEMAND_SYNC_ENABLED=false, got true")
+	}
+	if cfg.OnDemandSyncMinIntervalMinutes != 45 {
+		t.Errorf("expected ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES 45, got %d", cfg.OnDemandSyncMinIntervalMinutes)
 	}
 }
 

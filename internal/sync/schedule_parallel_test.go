@@ -113,3 +113,43 @@ func TestSyncSchedules_OnlyKRLStationsAreSynced(t *testing.T) {
 		t.Fatalf("synced station IDs = %v, want %v", got, want)
 	}
 }
+
+func TestSyncSchedules_SkipsConfiguredStations(t *testing.T) {
+	db := setupScheduleSyncTestDB(t)
+
+	seed := []models.Station{
+		{UID: "mri", ID: "MRI", Name: "Manggarai", Type: "KRL"},
+		{UID: "jakk", ID: "JAKK", Name: "Jakarta Kota", Type: "KRL"},
+		{UID: "boo", ID: "BOO", Name: "Bogor", Type: "KRL"},
+	}
+	for _, st := range seed {
+		if err := db.Create(&st).Error; err != nil {
+			t.Fatalf("seed station %s: %v", st.ID, err)
+		}
+	}
+
+	original := syncStationSchedulesFunc
+	defer func() { syncStationSchedulesFunc = original }()
+
+	called := make(chan string, 10)
+	syncStationSchedulesFunc = func(_ *config.Config, _ *gorm.DB, stationID string) error {
+		called <- stationID
+		return nil
+	}
+
+	cfg := &config.Config{SkippedStations: []string{"JAKK", "BOO"}}
+	if err := SyncSchedules(cfg, db); err != nil {
+		t.Fatalf("SyncSchedules() error = %v", err)
+	}
+	close(called)
+
+	got := make([]string, 0, 10)
+	for id := range called {
+		got = append(got, id)
+	}
+	slices.Sort(got)
+	want := []string{"MRI"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("synced station IDs = %v, want %v", got, want)
+	}
+}

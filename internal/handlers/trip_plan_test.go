@@ -247,6 +247,41 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 			t.Fatalf("expected 3 legs, got %d", len(resp.Data.Options[0].Legs))
 		}
 	})
+
+	t.Run("marks projected metadata when using future at with snapshot reuse", func(t *testing.T) {
+		body := map[string]any{
+			"from_id":        "RW",
+			"to_id":          "SUDB",
+			"at":             "2026-03-08T15:51:00+07:00",
+			"window_minutes": 60,
+			"max_results":    8,
+		}
+		raw, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		h.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if !resp.Metadata.Projected {
+			t.Fatalf("expected metadata.projected=true")
+		}
+		if resp.Metadata.SnapshotDateWIB != "2026-03-05" {
+			t.Fatalf("snapshot_date_wib = %q, expected 2026-03-05", resp.Metadata.SnapshotDateWIB)
+		}
+		if len(resp.Data.Options) == 0 {
+			t.Fatalf("expected options > 0")
+		}
+	})
 }
 
 func loadRealWindowRows(t *testing.T) []models.Schedule {

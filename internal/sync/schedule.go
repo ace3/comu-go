@@ -34,25 +34,53 @@ type krlScheduleResponse struct {
 	Data   json.RawMessage `json:"data"` // can be [] or "No data" string
 }
 
-const scheduleSyncParallelism = 1
+const scheduleSyncParallelism = 4
 
 var syncStationSchedulesFunc = syncStationSchedules
 
 // SyncSchedules loads all stations and fetches schedules with bounded parallelism.
 func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+
 	var stations []models.Station
 	if err := db.Where("type = ? OR type = '' OR type IS NULL", "KRL").Find(&stations).Error; err != nil {
 		return fmt.Errorf("loading stations: %w", err)
 	}
 
-	slog.Info("syncing schedules", "stations", len(stations), "parallelism", scheduleSyncParallelism)
+	skippedSet := make(map[string]struct{}, len(cfg.SkippedStations))
+	for _, id := range cfg.SkippedStations {
+		normalized := strings.ToUpper(strings.TrimSpace(id))
+		if normalized != "" {
+			skippedSet[normalized] = struct{}{}
+		}
+	}
 
-	jobs := make(chan string, len(stations))
+	skippedCount := 0
+	filtered := make([]models.Station, 0, len(stations))
+	for _, station := range stations {
+		if _, skip := skippedSet[strings.ToUpper(strings.TrimSpace(station.ID))]; skip {
+			skippedCount++
+			continue
+		}
+		filtered = append(filtered, station)
+	}
+
+	slog.Info(
+		"syncing schedules",
+		"stations_total", len(stations),
+		"stations_skipped", skippedCount,
+		"stations_to_sync", len(filtered),
+		"parallelism", scheduleSyncParallelism,
+	)
+
+	jobs := make(chan string, len(filtered))
 	var wg sync.WaitGroup
 
 	workerCount := scheduleSyncParallelism
-	if len(stations) < workerCount {
-		workerCount = len(stations)
+	if len(filtered) < workerCount {
+		workerCount = len(filtered)
 	}
 
 	for i := 0; i < workerCount; i++ {
@@ -67,7 +95,7 @@ func SyncSchedules(cfg *config.Config, db *gorm.DB) error {
 		}()
 	}
 
-	for _, station := range stations {
+	for _, station := range filtered {
 		jobs <- station.ID
 	}
 	close(jobs)

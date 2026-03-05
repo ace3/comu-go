@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/comu/api/internal/cache"
+	"github.com/comu/api/internal/config"
 	"github.com/comu/api/internal/models"
 	"github.com/comu/api/internal/response"
+	"github.com/comu/api/internal/scheduler"
+	"github.com/comu/api/internal/scheduleview"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -18,11 +21,20 @@ import (
 type ScheduleHandler struct {
 	db    *gorm.DB
 	cache *cache.Cache
+	cfg   *config.Config
+	view  *scheduleview.Service
 }
 
 // NewScheduleHandler creates a ScheduleHandler.
-func NewScheduleHandler(db *gorm.DB, c *cache.Cache) *ScheduleHandler {
-	return &ScheduleHandler{db: db, cache: c}
+func NewScheduleHandler(db *gorm.DB, c *cache.Cache, cfg ...*config.Config) *ScheduleHandler {
+	handlerCfg := &config.Config{
+		OnDemandSyncEnabled:            false,
+		OnDemandSyncMinIntervalMinutes: 30,
+	}
+	if len(cfg) > 0 && cfg[0] != nil {
+		handlerCfg = cfg[0]
+	}
+	return &ScheduleHandler{db: db, cache: c, cfg: handlerCfg, view: scheduleview.New(db)}
 }
 
 // GetSchedules godoc
@@ -47,24 +59,22 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 	cacheKey := paginationCacheKey("schedule:"+stationID, page, limit)
 
 	var cached response.PaginatedResponse
-	if err := h.cache.Get(ctx, cacheKey, &cached); err == nil {
-		c.JSON(http.StatusOK, cached)
-		return
-	}
-
-	var total int64
-	if err := h.db.WithContext(ctx).Model(&models.Schedule{}).Where("station_id = ?", stationID).Count(&total).Error; err != nil {
-		if ctx.Err() != nil {
-			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+	if h.cache != nil {
+		if err := h.cache.Get(ctx, cacheKey, &cached); err == nil {
+			c.JSON(http.StatusOK, cached)
 			return
 		}
-		response.BuildError(c, http.StatusInternalServerError, "failed to count schedules")
-		return
 	}
 
-	var schedules []models.Schedule
-	offset := (page - 1) * limit
-	if err := h.db.WithContext(ctx).Where("station_id = ?", stationID).Order("departs_at asc").Offset(offset).Limit(limit).Find(&schedules).Error; err != nil {
+	wib, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		response.BuildError(c, http.StatusInternalServerError, "failed to load timezone")
+		return
+	}
+	targetAt := time.Now().In(wib)
+
+	schedules, total, meta, err := h.view.ProjectStationPage(ctx, stationID, page, limit, targetAt)
+	if err != nil {
 		if ctx.Err() != nil {
 			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
 			return
@@ -73,8 +83,23 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 		return
 	}
 
-	resp := response.BuildPaginatedSuccess(schedules, page, limit, int(total))
-	_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
+	syncTriggered := false
+	if meta.Projected || !meta.HasSnapshot {
+		syncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "schedule_station_page")
+	}
+	resp := response.BuildPaginatedSuccessWithMetadata(schedules, response.PaginatedMetadata{
+		Success:         true,
+		Page:            page,
+		Limit:           limit,
+		Total:           int(total),
+		Projected:       meta.Projected,
+		SnapshotDateWIB: meta.SnapshotDateWIB,
+		SnapshotAgeDays: meta.SnapshotAgeDays,
+		SyncTriggered:   syncTriggered,
+	})
+	if h.cache != nil {
+		_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
+	}
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -99,6 +124,23 @@ type scheduleWindowResponse struct {
 	WindowStartWIB string                  `json:"window_start_wib"`
 	WindowEndWIB   string                  `json:"window_end_wib"`
 	Stations       []scheduleWindowStation `json:"stations"`
+}
+
+func toWindowItems(rows []models.Schedule) []scheduleWindowItem {
+	items := make([]scheduleWindowItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, scheduleWindowItem{
+			TrainID:       row.TrainID,
+			Line:          row.Line,
+			Route:         row.Route,
+			OriginID:      row.OriginID,
+			DestinationID: row.DestinationID,
+			StationID:     row.StationID,
+			DepartsAt:     row.DepartsAt,
+			ArrivesAt:     row.ArrivesAt,
+		})
+	}
+	return items
 }
 
 // GetScheduleWindow godoc
@@ -155,13 +197,8 @@ func (h *ScheduleHandler) GetScheduleWindow(c *gin.Context) {
 	startWIB := atWIB.Add(-window)
 	endWIB := atWIB.Add(window)
 
-	var items []scheduleWindowItem
-	query := h.db.WithContext(ctx).
-		Model(&models.Schedule{}).
-		Select("train_id", "line", "route", "origin_id", "destination_id", "station_id", "departs_at", "arrives_at").
-		Where("station_id IN ? AND departs_at BETWEEN ? AND ?", stationIDs, startWIB, endWIB).
-		Order("station_id asc, departs_at asc")
-	if err := query.Find(&items).Error; err != nil {
+	rows, meta, err := h.view.ProjectWindow(ctx, stationIDs, atWIB, windowMinutes)
+	if err != nil {
 		if ctx.Err() != nil {
 			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
 			return
@@ -169,7 +206,7 @@ func (h *ScheduleHandler) GetScheduleWindow(c *gin.Context) {
 		response.BuildError(c, http.StatusInternalServerError, "failed to fetch schedules")
 		return
 	}
-
+	items := toWindowItems(rows)
 	byStation := make(map[string][]scheduleWindowItem, len(stationIDs))
 	for _, item := range items {
 		byStation[item.StationID] = append(byStation[item.StationID], item)
@@ -183,7 +220,17 @@ func (h *ScheduleHandler) GetScheduleWindow(c *gin.Context) {
 		})
 	}
 
-	response.BuildSuccess(c, scheduleWindowResponse{
+	syncTriggered := false
+	if meta.Projected || !meta.HasSnapshot {
+		syncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "schedule_window")
+	}
+	response.BuildSuccessWithMetadata(c, response.Metadata{
+		Success:         true,
+		Projected:       meta.Projected,
+		SnapshotDateWIB: meta.SnapshotDateWIB,
+		SnapshotAgeDays: meta.SnapshotAgeDays,
+		SyncTriggered:   syncTriggered,
+	}, scheduleWindowResponse{
 		AtWIB:          atWIB.Format(time.RFC3339),
 		WindowStartWIB: startWIB.Format(time.RFC3339),
 		WindowEndWIB:   endWIB.Format(time.RFC3339),

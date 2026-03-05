@@ -168,14 +168,14 @@ func main() {
 		v1.GET("/station", stationH.GetStations)
 		v1.GET("/station/:id", stationH.GetStation)
 
-		scheduleH := handlers.NewScheduleHandler(db, c)
+		scheduleH := handlers.NewScheduleHandler(db, c, cfg)
 		v1.GET("/schedule/:station_id", scheduleH.GetSchedules)
 		v1.GET("/schedule/window", scheduleH.GetScheduleWindow)
 
 		routeH := handlers.NewRouteHandler(db, c)
 		v1.GET("/route/:train_id", routeH.GetRoute)
 
-		tripPlanH := handlers.NewTripPlanHandler(db, c)
+		tripPlanH := handlers.NewTripPlanHandler(db, c, cfg)
 		v1.POST("/trip-plan", tripPlanH.GetTripPlan)
 
 		mrtH := handlers.NewMRTHandler(db, c)

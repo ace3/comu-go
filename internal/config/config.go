@@ -18,6 +18,9 @@ type Config struct {
 	Env             string
 	KAIAuthToken    string // initial value loaded from env; use Token() at runtime
 	SyncSecret      string
+	SkippedStations []string
+	OnDemandSyncEnabled            bool
+	OnDemandSyncMinIntervalMinutes int
 	TelegramToken   string
 	OpenMeteoBase   string
 	Timezone        string
@@ -69,6 +72,17 @@ func Load() *Config {
 	}
 
 	autoSync := os.Getenv("AUTO_SYNC")
+	skippedStations := parseCSVEnvWithDefault("SKIPPED_STATIONS", []string{"GGL", "CKP", "BANDARA", "PWK"})
+	onDemandSyncEnabled := os.Getenv("ON_DEMAND_SYNC_ENABLED")
+	if onDemandSyncEnabled == "" {
+		onDemandSyncEnabled = "true"
+	}
+	onDemandSyncMinIntervalMinutes := 30
+	if raw := os.Getenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES"); strings.TrimSpace(raw) != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			onDemandSyncMinIntervalMinutes = parsed
+		}
+	}
 
 	var adminID int64
 	if s := os.Getenv("ADMIN_TELEGRAM_ID"); s != "" {
@@ -82,12 +96,36 @@ func Load() *Config {
 		Env:             env,
 		KAIAuthToken:    os.Getenv("KAI_AUTH_TOKEN"),
 		SyncSecret:      os.Getenv("SYNC_SECRET"),
+		SkippedStations: skippedStations,
+		OnDemandSyncEnabled:            onDemandSyncEnabled == "true" || onDemandSyncEnabled == "1",
+		OnDemandSyncMinIntervalMinutes: onDemandSyncMinIntervalMinutes,
 		TelegramToken:   os.Getenv("TELEGRAM_TOKEN"),
 		OpenMeteoBase:   openMeteoBase,
 		Timezone:        tz,
 		AutoSync:        autoSync == "true" || autoSync == "1",
 		AdminTelegramID: adminID,
 	}
+}
+
+func parseCSVEnvWithDefault(key string, fallback []string) []string {
+	raw := os.Getenv(key)
+	if strings.TrimSpace(raw) == "" {
+		return append([]string(nil), fallback...)
+	}
+
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.ToUpper(strings.TrimSpace(p))
+		if p == "" {
+			continue
+		}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return append([]string(nil), fallback...)
+	}
+	return out
 }
 
 // Validate checks that all required environment variables are set.

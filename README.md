@@ -59,6 +59,12 @@ OPEN_METEO_BASE=https://api.open-meteo.com/v1/forecast
 
 # Set to true to auto-sync data daily at 00:10 WIB
 AUTO_SYNC=false
+# Comma-separated KRL station IDs to skip during schedule sync
+SKIPPED_STATIONS=GGL,CKP,BANDARA,PWK
+# Trigger background KRL schedule sync when projected data is served
+ON_DEMAND_SYNC_ENABLED=true
+# Minimum minutes between on-demand sync triggers
+ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES=30
 ```
 
 ### 4. Start PostgreSQL and Redis
@@ -276,3 +282,6 @@ curl -X POST https://your-domain/admin/backfill \
 - API responses are cached in Redis until midnight WIB (GMT+7)
 - `KAI_AUTH_TOKEN` is only needed for `make sync`, not for running the API server
 - `AUTO_SYNC=true` enables automatic daily sync at 00:10 WIB without needing a cron job
+- `SKIPPED_STATIONS` controls which KRL station IDs are skipped during schedule sync (default: `GGL,CKP,BANDARA,PWK`)
+- Schedule/trip-plan responses may include metadata: `projected`, `snapshot_date_wib`, `snapshot_age_days`, `sync_triggered`
+- `ON_DEMAND_SYNC_ENABLED=true` triggers background schedule sync when projected data is served (debounced by `ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES`)

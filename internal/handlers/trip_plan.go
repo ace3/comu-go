@@ -10,8 +10,11 @@ import (
 	"unicode"
 
 	"github.com/comu/api/internal/cache"
+	"github.com/comu/api/internal/config"
 	"github.com/comu/api/internal/models"
 	"github.com/comu/api/internal/response"
+	"github.com/comu/api/internal/scheduler"
+	"github.com/comu/api/internal/scheduleview"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -45,10 +48,19 @@ var terminalCodeByName = map[string]string{
 type TripPlanHandler struct {
 	db    *gorm.DB
 	cache *cache.Cache
+	cfg   *config.Config
+	view  *scheduleview.Service
 }
 
-func NewTripPlanHandler(db *gorm.DB, c *cache.Cache) *TripPlanHandler {
-	return &TripPlanHandler{db: db, cache: c}
+func NewTripPlanHandler(db *gorm.DB, c *cache.Cache, cfg ...*config.Config) *TripPlanHandler {
+	handlerCfg := &config.Config{
+		OnDemandSyncEnabled:            false,
+		OnDemandSyncMinIntervalMinutes: 30,
+	}
+	if len(cfg) > 0 && cfg[0] != nil {
+		handlerCfg = cfg[0]
+	}
+	return &TripPlanHandler{db: db, cache: c, cfg: handlerCfg, view: scheduleview.New(db)}
 }
 
 type tripPlanRequest struct {
@@ -165,12 +177,8 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 	windowEnd := now.Add(time.Duration(windowMinutes) * time.Minute)
 
-	var firstLegSchedules []models.Schedule
-	if err := h.db.WithContext(ctx).
-		Where("station_id = ? AND departs_at BETWEEN ? AND ?", fromID, now, windowEnd).
-		Order("departs_at asc").
-		Limit(120).
-		Find(&firstLegSchedules).Error; err != nil {
+	firstLegSchedules, projectionMeta, err := h.view.ProjectForTripPlan(ctx, []string{fromID}, now, windowEnd, 120)
+	if err != nil {
 		if ctx.Err() != nil {
 			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
 			return
@@ -179,8 +187,18 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		return
 	}
 
+	plannerMeta := response.Metadata{
+		Success:         true,
+		Projected:       projectionMeta.Projected,
+		SnapshotDateWIB: projectionMeta.SnapshotDateWIB,
+		SnapshotAgeDays: projectionMeta.SnapshotAgeDays,
+	}
+
 	if len(firstLegSchedules) == 0 {
-		response.BuildSuccess(c, tripPlanResponse{
+		if plannerMeta.Projected || !projectionMeta.HasSnapshot {
+			plannerMeta.SyncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "trip_plan_no_first_leg")
+		}
+		response.BuildSuccessWithMetadata(c, plannerMeta, tripPlanResponse{
 			Options: []tripPlanOption{},
 			Stats:   tripPlanStats{ExpandedStates: 0, Truncated: false},
 		})
@@ -188,7 +206,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 
 	firstTrainIDs := uniqTrainIDs(firstLegSchedules)
-	firstRoutes, err := loadRoutesByTrain(ctx, h.db, firstTrainIDs)
+	firstRoutes, routeMeta, err := h.view.ProjectRoutesByTrain(ctx, firstTrainIDs, now)
 	if err != nil {
 		if ctx.Err() != nil {
 			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
@@ -196,6 +214,15 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		}
 		response.BuildError(c, http.StatusInternalServerError, "failed to fetch routes")
 		return
+	}
+	if routeMeta.Projected {
+		plannerMeta.Projected = true
+	}
+	if plannerMeta.SnapshotDateWIB == "" {
+		plannerMeta.SnapshotDateWIB = routeMeta.SnapshotDateWIB
+	}
+	if plannerMeta.SnapshotAgeDays < routeMeta.SnapshotAgeDays {
+		plannerMeta.SnapshotAgeDays = routeMeta.SnapshotAgeDays
 	}
 
 	options := make([]tripPlanOption, 0, maxResults*16)
@@ -261,7 +288,10 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 
 	if direct := finalizeTripOptions(options, maxResults); len(direct) > 0 && len(direct[0].Legs) == 1 {
-		response.BuildSuccess(c, tripPlanResponse{
+		if plannerMeta.Projected {
+			plannerMeta.SyncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "trip_plan_direct")
+		}
+		response.BuildSuccessWithMetadata(c, plannerMeta, tripPlanResponse{
 			Options: direct,
 			Stats:   tripPlanStats{ExpandedStates: expanded, Truncated: false},
 		})
@@ -269,7 +299,10 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 
 	if len(seedsByTransfer) == 0 || maxTransfers == 0 {
-		response.BuildSuccess(c, tripPlanResponse{
+		if plannerMeta.Projected {
+			plannerMeta.SyncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "trip_plan_no_transfer_paths")
+		}
+		response.BuildSuccessWithMetadata(c, plannerMeta, tripPlanResponse{
 			Options: []tripPlanOption{},
 			Stats:   tripPlanStats{ExpandedStates: expanded, Truncated: false},
 		})
@@ -297,11 +330,8 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		}
 		sort.Strings(transferIDs)
 
-		var departures []models.Schedule
-		if err := h.db.WithContext(ctx).
-			Where("station_id IN ? AND departs_at BETWEEN ? AND ?", transferIDs, earliestTransferArrival.Add(tripMinTransfer), latestTransferArrival.Add(tripMaxTransfer)).
-			Order("station_id asc, departs_at asc").
-			Find(&departures).Error; err != nil {
+		departures, depMeta, err := h.view.ProjectForTripPlan(ctx, transferIDs, earliestTransferArrival.Add(tripMinTransfer), latestTransferArrival.Add(tripMaxTransfer), 0)
+		if err != nil {
 			if ctx.Err() != nil {
 				response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
 				return
@@ -309,8 +339,17 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 			response.BuildError(c, http.StatusInternalServerError, "failed to fetch transfer schedules")
 			return
 		}
+		if depMeta.Projected {
+			plannerMeta.Projected = true
+		}
+		if plannerMeta.SnapshotDateWIB == "" {
+			plannerMeta.SnapshotDateWIB = depMeta.SnapshotDateWIB
+		}
+		if plannerMeta.SnapshotAgeDays < depMeta.SnapshotAgeDays {
+			plannerMeta.SnapshotAgeDays = depMeta.SnapshotAgeDays
+		}
 
-		routesByTrain, err := loadRoutesByTrain(ctx, h.db, uniqTrainIDs(departures))
+		routesByTrain, transferRouteMeta, err := h.view.ProjectRoutesByTrain(ctx, uniqTrainIDs(departures), now)
 		if err != nil {
 			if ctx.Err() != nil {
 				response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
@@ -318,6 +357,15 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 			}
 			response.BuildError(c, http.StatusInternalServerError, "failed to fetch transfer routes")
 			return
+		}
+		if transferRouteMeta.Projected {
+			plannerMeta.Projected = true
+		}
+		if plannerMeta.SnapshotDateWIB == "" {
+			plannerMeta.SnapshotDateWIB = transferRouteMeta.SnapshotDateWIB
+		}
+		if plannerMeta.SnapshotAgeDays < transferRouteMeta.SnapshotAgeDays {
+			plannerMeta.SnapshotAgeDays = transferRouteMeta.SnapshotAgeDays
 		}
 
 		byTransfer := map[string][]models.Schedule{}
@@ -414,7 +462,10 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 
 	final := finalizeTripOptions(options, maxResults)
-	response.BuildSuccess(c, tripPlanResponse{
+	if plannerMeta.Projected || !projectionMeta.HasSnapshot {
+		plannerMeta.SyncTriggered = scheduler.MaybeTriggerScheduleSync(h.cfg, h.db, h.cache, "trip_plan_final")
+	}
+	response.BuildSuccessWithMetadata(c, plannerMeta, tripPlanResponse{
 		Options: final,
 		Stats:   tripPlanStats{ExpandedStates: expanded, Truncated: false},
 	})

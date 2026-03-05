@@ -143,6 +143,37 @@ func TestScheduleHandler_GetScheduleWindow(t *testing.T) {
 		}
 	})
 
+	t.Run("marks projected metadata when using future at with snapshot reuse", func(t *testing.T) {
+		at := "2026-03-08T10:00:00+07:00"
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/v1/schedule/window?station_ids=MRI,JAKK&window_minutes=60&at="+url.QueryEscape(at), nil)
+
+		h.GetScheduleWindow(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200", w.Code)
+		}
+		var resp windowTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if !resp.Metadata.Projected {
+			t.Fatalf("expected metadata.projected=true")
+		}
+		if resp.Metadata.SnapshotDateWIB != "2026-03-05" {
+			t.Fatalf("snapshot_date_wib = %q, expected 2026-03-05", resp.Metadata.SnapshotDateWIB)
+		}
+
+		var data windowData
+		if err := json.Unmarshal(resp.Data, &data); err != nil {
+			t.Fatalf("parse data: %v", err)
+		}
+		if len(data.Stations) != 2 {
+			t.Fatalf("stations len = %d, expected 2", len(data.Stations))
+		}
+	})
+
 	t.Run("returns empty schedule list for station with no data in range", func(t *testing.T) {
 		at := "2026-03-05T10:00:00+07:00"
 		w := httptest.NewRecorder()
