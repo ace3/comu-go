@@ -7,6 +7,8 @@ Go port of [comuline/api](https://github.com/comuline/api) — Indonesian KRL Co
 - Go 1.22+
 - Docker (for PostgreSQL and Redis)
 
+> **Deploying to production?** See [DEPLOYMENT.md](DEPLOYMENT.md) for VPS, Fly.io, and Render guides.
+
 ---
 
 ## Setup
@@ -203,6 +205,8 @@ make clean            # remove build artifacts
 make migrate          # run database migrations up
 make migrate-down     # roll back all database migrations
 ```
+
+For production deployment (`make prod-up`, Fly.io, Render) see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
