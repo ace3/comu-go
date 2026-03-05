@@ -17,8 +17,6 @@ services:
         limits:
           memory: 256m
           cpus: "0.5"
-    secrets:
-      - kai_auth_token
 
   bot:
     build:
@@ -81,7 +79,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-
-secrets:
-  kai_auth_token:
-    file: ./secrets/kai_auth_token.txt

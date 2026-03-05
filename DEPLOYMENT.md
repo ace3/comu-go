@@ -110,17 +110,7 @@ This stack now exposes the API directly on port `8080`:
 
 If you need HTTPS, terminate TLS outside this compose stack (for example with your cloud load balancer, ingress controller, Traefik, or Nginx on the host).
 
-**4. (Optional) Use Docker secrets for `KAI_AUTH_TOKEN`**
-
-The prod compose file supports Docker secrets as an alternative to `.env`:
-
-```bash
-mkdir -p secrets
-echo "your_token_here" > secrets/kai_auth_token.txt
-chmod 600 secrets/kai_auth_token.txt
-```
-
-**5. Start all services**
+**4. Start all services**
 
 ```bash
 make prod-up
@@ -128,7 +118,7 @@ make prod-up
 
 This builds the API and bot images, then starts all services (app, bot, postgres, redis).
 
-**6. Sync data**
+**5. Sync data**
 
 Run sync from the host (one-time):
 
@@ -145,7 +135,7 @@ curl -X POST http://your-server-ip-or-domain:8080/sync \
 
 With `AUTO_SYNC=true`, data re-syncs automatically every day at 00:10 WIB.
 
-**7. Verify**
+**6. Verify**
 
 ```bash
 # Check all containers are healthy
