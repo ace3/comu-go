@@ -175,6 +175,9 @@ func main() {
 		routeH := handlers.NewRouteHandler(db, c)
 		v1.GET("/route/:train_id", routeH.GetRoute)
 
+		tripPlanH := handlers.NewTripPlanHandler(db, c)
+		v1.POST("/trip-plan", tripPlanH.GetTripPlan)
+
 		mrtH := handlers.NewMRTHandler(db, c)
 		mrt := v1.Group("/mrt")
 		{

@@ -150,13 +150,18 @@ function showPlanStatus(message, isError = false) {
   planStatusNode.className = isError ? "mt-2 min-h-5 text-sm text-rose-600" : "mt-2 min-h-5 text-sm text-slate-600";
 }
 
-async function fetchWithTimeout(url, timeoutMs = 10000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
+      method: options.method || "GET",
+      body: options.body,
       signal: controller.signal,
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(options.headers || {}),
+      },
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -365,6 +370,47 @@ function filterTripOptionsByDepartureWindow(options, now, windowMinutes) {
   return options.filter((option) => option.departAt >= now && option.departAt <= end);
 }
 
+function parseTripPlanOptions(rawOptions) {
+  if (!Array.isArray(rawOptions)) {
+    return [];
+  }
+  const parsed = [];
+  for (const option of rawOptions) {
+    const legs = Array.isArray(option.legs) ? option.legs : [];
+    const normalizedLegs = [];
+    for (const leg of legs) {
+      const departAt = new Date(leg.departAt);
+      const arriveAt = new Date(leg.arriveAt);
+      if (Number.isNaN(departAt.getTime()) || Number.isNaN(arriveAt.getTime())) {
+        continue;
+      }
+      normalizedLegs.push({
+        trainId: String(leg.trainId || ""),
+        line: String(leg.line || ""),
+        from: String(leg.from || "").toUpperCase(),
+        to: String(leg.to || "").toUpperCase(),
+        departAt,
+        arriveAt,
+      });
+    }
+    if (normalizedLegs.length === 0) {
+      continue;
+    }
+    const departAt = new Date(option.departAt);
+    const arriveAt = new Date(option.arriveAt);
+    if (Number.isNaN(departAt.getTime()) || Number.isNaN(arriveAt.getTime())) {
+      continue;
+    }
+    parsed.push({
+      legs: normalizedLegs,
+      departAt,
+      arriveAt,
+      durationMinutes: Number(option.durationMinutes || diffMinutes(departAt, arriveAt)),
+    });
+  }
+  return parsed;
+}
+
 function renderTripPlans(options) {
   planResultsNode.innerHTML = "";
   for (const option of options) {
@@ -484,32 +530,21 @@ async function generateTripPlan() {
   lastTripStats = null;
 
   try {
-    const originSchedules = await fetchStationSchedules(fromID);
-    if (!Array.isArray(originSchedules) || originSchedules.length === 0) {
-      showPlanStatus("No departures found from selected origin in current window.", true);
-      return;
-    }
-
-    const planner = window.PlannerCore;
-    if (!planner || typeof planner.findTripOptions !== "function") {
-      throw new Error("PlannerCore unavailable");
-    }
-
     const now = new Date();
-    const { options, stats } = await planner.findTripOptions({
-      fromID,
-      toID,
-      now,
-      firstLegSchedules: originSchedules,
-      getRoute: fetchTrainRoute,
-      getStationSchedules: fetchStationSchedules,
-      config: {
-        maxResults: PLANNER_MAX_RESULTS,
-        lookbackMs: 0,
-        lookaheadMs: TRIP_PLANNER_WINDOW_MINUTES * 60 * 1000,
-      },
+    const payload = await fetchWithTimeout(`${API_BASE}/trip-plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from_id: fromID,
+        to_id: toID,
+        at: now.toISOString(),
+        window_minutes: TRIP_PLANNER_WINDOW_MINUTES,
+        max_results: PLANNER_MAX_RESULTS,
+      }),
     });
 
+    const options = parseTripPlanOptions(payload?.data?.options);
+    const stats = payload?.data?.stats || null;
     const boundedOptions = filterTripOptionsByDepartureWindow(options, now, TRIP_PLANNER_WINDOW_MINUTES);
     lastTripOptions = boundedOptions;
     lastTripStats = stats || null;
