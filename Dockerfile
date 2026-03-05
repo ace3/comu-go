@@ -23,6 +23,7 @@ WORKDIR /app
 
 COPY --from=builder /app/bin/api /app/api
 COPY --from=builder /app/docs /app/docs
+COPY --from=builder /app/web /app/web
 
 EXPOSE 8080
 
