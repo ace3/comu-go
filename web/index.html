@@ -86,6 +86,38 @@
         class="hidden rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-soft backdrop-blur sm:p-6"
         aria-live="polite"
       >
+        <div class="mb-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+          <h3 class="text-base font-bold tracking-tight text-slate-900">Trip Planner</h3>
+          <p class="mt-1 text-xs text-slate-600 sm:text-sm">
+            Select origin and destination to generate direct or transit options with wait times.
+          </p>
+          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500" for="plan-from">
+              From
+              <select
+                id="plan-from"
+                class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+              ></select>
+            </label>
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500" for="plan-to">
+              Destination
+              <select
+                id="plan-to"
+                class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+              ></select>
+            </label>
+          </div>
+          <button
+            id="plan-trip"
+            type="button"
+            class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            Generate Schedule
+          </button>
+          <div id="plan-status" class="mt-2 min-h-5 text-sm text-slate-600"></div>
+          <div id="plan-results" class="mt-2 grid gap-2"></div>
+        </div>
+
         <div class="mb-3 grid gap-2 sm:grid-cols-2">
           <button
             id="edit-stations"

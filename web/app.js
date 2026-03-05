@@ -18,10 +18,17 @@ const editButton = document.getElementById("edit-stations");
 const statusNode = document.getElementById("status");
 const windowLabel = document.getElementById("window-label");
 const cardsNode = document.getElementById("cards");
+const planFrom = document.getElementById("plan-from");
+const planTo = document.getElementById("plan-to");
+const planButton = document.getElementById("plan-trip");
+const planStatusNode = document.getElementById("plan-status");
+const planResultsNode = document.getElementById("plan-results");
 
 let stations = [];
 let preferredStations = [];
 let selectedSet = new Set();
+const routeCache = new Map();
+const stationScheduleCache = new Map();
 
 function sanitizeStationIDs(input) {
   if (!Array.isArray(input)) {
@@ -98,6 +105,11 @@ function showPickerStatus(message, isError = false) {
   pickerStatusNode.className = isError ? "mb-3 mt-2 min-h-5 text-sm text-rose-600" : "mb-3 mt-2 min-h-5 text-sm text-slate-600";
 }
 
+function showPlanStatus(message, isError = false) {
+  planStatusNode.textContent = message;
+  planStatusNode.className = isError ? "mt-2 min-h-5 text-sm text-rose-600" : "mt-2 min-h-5 text-sm text-slate-600";
+}
+
 async function fetchWithTimeout(url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -131,6 +143,11 @@ async function loadStations() {
 function stationDisplayName(stationID) {
   const match = stations.find((s) => s.id === stationID);
   return match ? `${match.name} (${match.id})` : stationID;
+}
+
+function stationNameOnly(stationID) {
+  const match = stations.find((s) => s.id === stationID);
+  return match ? match.name : stationID;
 }
 
 function updateSelectionCount() {
@@ -250,6 +267,277 @@ function parseDirection(schedule) {
   return { from, to };
 }
 
+function buildWindowParams() {
+  const windowMinutes = Math.ceil((WINDOW_BEFORE_MINUTES + WINDOW_AFTER_MINUTES) / 2);
+  const atShiftMinutes = WINDOW_AFTER_MINUTES - windowMinutes;
+  const at = new Date(Date.now() + atShiftMinutes * 60 * 1000);
+  return { windowMinutes, at };
+}
+
+async function fetchTrainRoute(trainID) {
+  if (routeCache.has(trainID)) {
+    return routeCache.get(trainID);
+  }
+  const payload = await fetchWithTimeout(`${API_BASE}/route/${encodeURIComponent(trainID)}`);
+  const route = payload?.data?.routes || [];
+  routeCache.set(trainID, route);
+  return route;
+}
+
+async function fetchStationSchedules(stationID) {
+  if (stationScheduleCache.has(stationID)) {
+    return stationScheduleCache.get(stationID);
+  }
+  const payload = await fetchWithTimeout(`${API_BASE}/schedule/${encodeURIComponent(stationID)}?limit=500`);
+  const schedules = Array.isArray(payload?.data) ? payload.data : [];
+  stationScheduleCache.set(stationID, schedules);
+  return schedules;
+}
+
+function getStopTime(stop) {
+  const primary = stop.arrives_at || stop.departs_at;
+  return new Date(primary);
+}
+
+function findStopIndex(route, stationID, minTime) {
+  for (let i = 0; i < route.length; i++) {
+    const stop = route[i];
+    if (String(stop.station_id || "").toUpperCase() !== stationID) {
+      continue;
+    }
+    if (!minTime || new Date(stop.departs_at || stop.arrives_at) >= minTime) {
+      return i;
+    }
+  }
+  return route.findIndex((stop) => String(stop.station_id || "").toUpperCase() === stationID);
+}
+
+function diffMinutes(from, to) {
+  return Math.max(0, Math.round((to.getTime() - from.getTime()) / 60000));
+}
+
+function optionKey(option) {
+  return option.legs.map((leg) => `${leg.trainId}:${leg.from}->${leg.to}@${leg.departAt.toISOString()}`).join("|");
+}
+
+function renderTripPlans(options) {
+  planResultsNode.innerHTML = "";
+
+  if (options.length === 0) {
+    showPlanStatus("No route option found in current window.", true);
+    return;
+  }
+
+  showPlanStatus(`${options.length} option(s) found.`);
+  for (const option of options) {
+    const card = document.createElement("article");
+    card.className = "rounded-xl border border-slate-200 bg-white p-3";
+
+    const head = document.createElement("div");
+    head.className = "flex items-center justify-between gap-2";
+    const mode = document.createElement("span");
+    const transitCount = Math.max(0, option.legs.length - 1);
+    mode.className =
+      transitCount === 0
+        ? "rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700"
+        : "rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700";
+    mode.textContent = transitCount === 0 ? "Direct" : `${transitCount} Transit`;
+    const timing = document.createElement("div");
+    timing.className = "text-sm font-bold text-slate-900";
+    timing.textContent = `${formatWIBTime(option.departAt.toISOString())} → ${formatWIBTime(option.arriveAt.toISOString())}`;
+    head.appendChild(mode);
+    head.appendChild(timing);
+
+    const meta = document.createElement("div");
+    meta.className = "mt-1 text-xs text-slate-600";
+    meta.textContent = `Duration ${option.durationMinutes} min`;
+
+    card.appendChild(head);
+    card.appendChild(meta);
+
+    const legs = document.createElement("div");
+    legs.className = "mt-2 grid gap-1 text-sm text-slate-700";
+    for (let i = 0; i < option.legs.length; i++) {
+      const leg = option.legs[i];
+      const legNode = document.createElement("div");
+      legNode.textContent = `${leg.trainId} | ${leg.line} | ${stationNameOnly(leg.from)} → ${stationNameOnly(leg.to)}`;
+      legs.appendChild(legNode);
+
+      if (i < option.legs.length - 1) {
+        const waitMin = diffMinutes(leg.arriveAt, option.legs[i + 1].departAt);
+        const transfer = document.createElement("div");
+        transfer.className = "text-xs font-semibold text-amber-700";
+        transfer.textContent = `Transit at ${stationNameOnly(leg.to)} • wait ${waitMin} min`;
+        legs.appendChild(transfer);
+      }
+    }
+    card.appendChild(legs);
+
+    planResultsNode.appendChild(card);
+  }
+}
+
+async function generateTripPlan() {
+  const fromID = String(planFrom.value || "").toUpperCase();
+  const toID = String(planTo.value || "").toUpperCase();
+  if (!fromID || !toID) {
+    showPlanStatus("Please choose both origin and destination.", true);
+    return;
+  }
+  if (fromID === toID) {
+    showPlanStatus("Origin and destination cannot be the same.", true);
+    return;
+  }
+
+  planButton.disabled = true;
+  planResultsNode.innerHTML = "";
+  showPlanStatus("Generating routes...");
+
+  try {
+    const { windowMinutes, at } = buildWindowParams();
+    const qs = new URLSearchParams({
+      station_ids: fromID,
+      window_minutes: String(windowMinutes),
+      at: at.toISOString(),
+    });
+    const payload = await fetchWithTimeout(`${API_BASE}/schedule/window?${qs.toString()}`);
+    const schedules = payload?.data?.stations?.[0]?.schedules || [];
+    const firstLegCandidates = schedules.slice(0, 10);
+    if (firstLegCandidates.length === 0) {
+      showPlanStatus("No departures found from selected origin in current window.", true);
+      return;
+    }
+
+    const planOptions = [];
+    const seen = new Set();
+    const queue = [];
+    const MAX_TRANSFERS = 3;
+    const MIN_TRANSFER_MS = 2 * 60 * 1000;
+    const MAX_TRANSFER_MS = 120 * 60 * 1000;
+
+    for (const first of firstLegCandidates) {
+      const departAt = new Date(first.departs_at);
+      const route = await fetchTrainRoute(first.train_id);
+      if (!Array.isArray(route) || route.length === 0) {
+        continue;
+      }
+      const fromIdx = findStopIndex(route, fromID, new Date(departAt.getTime() - MIN_TRANSFER_MS));
+      if (fromIdx < 0) {
+        continue;
+      }
+      const maxForwardStops = Math.min(route.length, fromIdx + 12);
+      for (let i = fromIdx + 1; i < maxForwardStops; i++) {
+        const nextStation = String(route[i].station_id || "").toUpperCase();
+        if (!nextStation || nextStation === fromID) {
+          continue;
+        }
+        const arriveAt = getStopTime(route[i]);
+        const leg = {
+          trainId: first.train_id,
+          line: first.line,
+          from: fromID,
+          to: nextStation,
+          departAt,
+          arriveAt,
+        };
+        queue.push({
+          stationID: nextStation,
+          arriveAt,
+          legs: [leg],
+          visited: new Set([fromID, nextStation]),
+        });
+      }
+    }
+
+    while (queue.length > 0 && planOptions.length < 12) {
+      queue.sort((a, b) => a.arriveAt - b.arriveAt);
+      const current = queue.shift();
+      const legs = current.legs;
+      const lastLeg = legs[legs.length - 1];
+
+      if (current.stationID === toID) {
+        const option = {
+          legs,
+          departAt: legs[0].departAt,
+          arriveAt: lastLeg.arriveAt,
+          durationMinutes: diffMinutes(legs[0].departAt, lastLeg.arriveAt),
+        };
+        const key = optionKey(option);
+        if (!seen.has(key)) {
+          seen.add(key);
+          planOptions.push(option);
+        }
+        continue;
+      }
+
+      if (legs.length - 1 >= MAX_TRANSFERS) {
+        continue;
+      }
+
+      const departures = await fetchStationSchedules(current.stationID);
+      const candidateDepartures = departures
+        .filter((s) => {
+          const depart = new Date(s.departs_at);
+          const gap = depart.getTime() - current.arriveAt.getTime();
+          return gap >= MIN_TRANSFER_MS && gap <= MAX_TRANSFER_MS;
+        })
+        .slice(0, 25);
+
+      for (const next of candidateDepartures) {
+        const nextDepartAt = new Date(next.departs_at);
+        const nextRoute = await fetchTrainRoute(next.train_id);
+        if (!Array.isArray(nextRoute) || nextRoute.length === 0) {
+          continue;
+        }
+        const boardIdx = findStopIndex(nextRoute, current.stationID, new Date(nextDepartAt.getTime() - MIN_TRANSFER_MS));
+        if (boardIdx < 0) {
+          continue;
+        }
+
+        const maxForwardStops = Math.min(nextRoute.length, boardIdx + 12);
+        for (let i = boardIdx + 1; i < maxForwardStops; i++) {
+          const nextStation = String(nextRoute[i].station_id || "").toUpperCase();
+          if (!nextStation || current.visited.has(nextStation)) {
+            continue;
+          }
+          const nextArriveAt = getStopTime(nextRoute[i]);
+          const nextLeg = {
+            trainId: next.train_id,
+            line: next.line,
+            from: current.stationID,
+            to: nextStation,
+            departAt: nextDepartAt,
+            arriveAt: nextArriveAt,
+          };
+          const nextVisited = new Set(current.visited);
+          nextVisited.add(nextStation);
+          queue.push({
+            stationID: nextStation,
+            arriveAt: nextArriveAt,
+            legs: [...legs, nextLeg],
+            visited: nextVisited,
+          });
+        }
+      }
+    }
+
+    planOptions.sort((a, b) => a.departAt - b.departAt || a.arriveAt - b.arriveAt);
+    renderTripPlans(planOptions.slice(0, 8));
+  } catch (_) {
+    showPlanStatus("Failed to generate route options. Please retry.", true);
+  } finally {
+    planButton.disabled = false;
+  }
+}
+
+function populateTripPlannerOptions() {
+  const options = stations
+    .map((station) => `<option value="${station.id}">${station.name} (${station.id})</option>`)
+    .join("");
+  planFrom.innerHTML = `<option value="">Select origin</option>${options}`;
+  planTo.innerHTML = `<option value="">Select destination</option>${options}`;
+}
+
 function renderSchedules(data) {
   cardsNode.innerHTML = "";
   windowLabel.textContent = `Window: ${data.window_start_wib} to ${data.window_end_wib}`;
@@ -317,9 +605,7 @@ async function loadWindowSchedules() {
   showStatus("Loading schedules...");
 
   try {
-    const windowMinutes = Math.ceil((WINDOW_BEFORE_MINUTES + WINDOW_AFTER_MINUTES) / 2);
-    const atShiftMinutes = WINDOW_AFTER_MINUTES - windowMinutes;
-    const at = new Date(Date.now() + atShiftMinutes * 60 * 1000);
+    const { windowMinutes, at } = buildWindowParams();
 
     const qs = new URLSearchParams({
       station_ids: preferredStations.join(","),
@@ -347,8 +633,10 @@ async function init() {
 
   preferredStations = readPreferredStations();
   selectedSet = new Set(preferredStations);
+  populateTripPlannerOptions();
 
   stationSearch.addEventListener("input", renderStationPicker);
+  planButton.addEventListener("click", generateTripPlan);
 
   saveButton.addEventListener("click", async () => {
     savePreferredStations(Array.from(selectedSet));
