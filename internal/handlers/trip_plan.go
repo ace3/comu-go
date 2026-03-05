@@ -584,17 +584,20 @@ func appendTerminalFallbackStops(route []models.Schedule, fromID, routeName stri
 		return route
 	}
 	last := route[len(route)-1]
-	tail := last.ArrivesAt
-	if tail.IsZero() {
-		tail = last.DepartsAt
+	// ArrivesAt stores DestTime from the KRL API = arrival time at the final destination.
+	// Use it directly if it's after the last departure (it already IS the terminal time).
+	// Fall back to DepartsAt+5min only when ArrivesAt is not meaningful.
+	tail := last.DepartsAt.Add(5 * time.Minute)
+	if !last.ArrivesAt.IsZero() && last.ArrivesAt.After(last.DepartsAt) {
+		tail = last.ArrivesAt
 	}
 	fallback := models.Schedule{
 		TrainID:   last.TrainID,
 		Line:      last.Line,
 		Route:     routeName,
 		StationID: terminalID,
-		DepartsAt: tail.Add(5 * time.Minute),
-		ArrivesAt: tail.Add(5 * time.Minute),
+		DepartsAt: tail,
+		ArrivesAt: tail,
 	}
 	withTerminal := append(route, fallback)
 	return appendViaFallbackStops(withTerminal, routeName)

@@ -306,6 +306,73 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 		}
 	})
 
+	t.Run("finds tight 2-min transfer at terminus station", func(t *testing.T) {
+		// Replicates the real RW->SUD scenario:
+		// 2013A: RW departs 21:22, PSE departs 21:33 with ArrivesAt=21:38 (DestTime=DU).
+		// DU has no departure record for 2013A (it's the terminus).
+		// appendTerminalFallbackStops must synthesise DU at 21:38 (not 21:43).
+		// 2014B: departs DU at 21:40, passes SUD at 21:52.
+		db5 := setupTestDB(t)
+		h5 := NewTripPlanHandler(db5, nil)
+		rows := []models.Schedule{
+			// 2013A: Tangerang->Duri, terminates at DU (no DU departure row)
+			{ID: "t-rw", TrainID: "2013A", Line: "Commuter Line Tangerang", Route: "TANGERANG - DURI",
+				OriginID: "TNG", DestinationID: "DU", StationID: "RW",
+				DepartsAt: mustWIBTime(t, "21:22"), ArrivesAt: mustWIBTime(t, "21:38")},
+			{ID: "t-pse", TrainID: "2013A", Line: "Commuter Line Tangerang", Route: "TANGERANG - DURI",
+				OriginID: "TNG", DestinationID: "DU", StationID: "PSE",
+				DepartsAt: mustWIBTime(t, "21:33"), ArrivesAt: mustWIBTime(t, "21:38")},
+			// 2014B: Duri->Manggarai, passes SUD
+			{ID: "m-du", TrainID: "2014B", Line: "Commuter Line Tangerang", Route: "DURI - MANGGARAI",
+				OriginID: "DU", DestinationID: "MRI", StationID: "DU",
+				DepartsAt: mustWIBTime(t, "21:40"), ArrivesAt: mustWIBTime(t, "21:52")},
+			{ID: "m-sud", TrainID: "2014B", Line: "Commuter Line Tangerang", Route: "DURI - MANGGARAI",
+				OriginID: "DU", DestinationID: "MRI", StationID: "SUD",
+				DepartsAt: mustWIBTime(t, "21:52"), ArrivesAt: mustWIBTime(t, "21:56")},
+		}
+		for _, row := range rows {
+			if err := db5.Create(&row).Error; err != nil {
+				t.Fatalf("seed row %s: %v", row.ID, err)
+			}
+		}
+
+		body := map[string]any{
+			"from_id":        "RW",
+			"to_id":          "SUD",
+			"at":             "2026-03-05T21:13:00+07:00",
+			"window_minutes": 60,
+			"max_results":    8,
+			"max_transfers":  1,
+		}
+		raw, _ := json.Marshal(body)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h5.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if len(resp.Data.Options) == 0 {
+			t.Fatalf("expected at least one option for tight terminus transfer, got none")
+		}
+		found := false
+		for _, opt := range resp.Data.Options {
+			if len(opt.Legs) == 2 && opt.Legs[0].TrainID == "2013A" && opt.Legs[1].TrainID == "2014B" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected 2013A->2014B option; got %+v", resp.Data.Options)
+		}
+	})
+
 	t.Run("marks projected metadata when using future at with snapshot reuse", func(t *testing.T) {
 		body := map[string]any{
 			"from_id":        "RW",
