@@ -104,6 +104,7 @@ The bot polls Telegram for updates. Make sure `TELEGRAM_TOKEN` is set in `.env`.
 | `GET` | `/openapi` | Raw OpenAPI JSON |
 | `GET` | `/metrics` | Prometheus metrics |
 | `POST` | `/sync` | Trigger manual sync (requires `X-Sync-Secret` header) |
+| `POST` | `/admin/backfill` | Force JSON backfill from `data/*.json` (requires `X-Sync-Secret` header) |
 | `GET` | `/v1/station` | List all stations (supports `?page=1&limit=50`) |
 | `GET` | `/v1/station/:id` | Get station by ID (e.g. `MRI`) |
 | `GET` | `/v1/schedule/:station_id` | Schedules for a station (supports `?page=1&limit=50`) |
@@ -258,6 +259,10 @@ curl -X POST https://your-domain/admin/rotate-token \
 
 # 2. Re-sync with the new token
 curl -X POST https://your-domain/sync \
+  -H "X-Sync-Secret: your-sync-secret"
+
+# 3. Force backfill from local JSON files without restart (optional)
+curl -X POST https://your-domain/admin/backfill \
   -H "X-Sync-Secret: your-sync-secret"
 ```
 

@@ -132,6 +132,21 @@ func main() {
 		gc.JSON(http.StatusAccepted, gin.H{"message": "sync started"})
 	})
 
+	// Force backfill from local JSON files while app is running.
+	// Protected by the same X-Sync-Secret header as /sync.
+	syncGroup.POST("/admin/backfill", func(gc *gin.Context) {
+		dataDir := gc.Query("data_dir")
+		go func() {
+			if err := backfillFromDataForce(db, dataDir); err != nil {
+				slog.Error("manual json backfill error", "error", err, "data_dir", dataDir)
+				return
+			}
+			c.InvalidateAll(context.Background())
+			slog.Info("manual json backfill complete", "data_dir", dataDir)
+		}()
+		gc.JSON(http.StatusAccepted, gin.H{"message": "json backfill started"})
+	})
+
 	// Token rotation — update KAI_AUTH_TOKEN in memory without restarting.
 	// Protected by the same X-Sync-Secret header as /sync.
 	syncGroup.POST("/admin/rotate-token", func(gc *gin.Context) {

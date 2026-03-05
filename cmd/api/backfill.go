@@ -50,6 +50,19 @@ func backfillFromDataIfEmpty(db *gorm.DB, dataDir string) error {
 	return nil
 }
 
+func backfillFromDataForce(db *gorm.DB, dataDir string) error {
+	dataDir = resolveBackfillDataDir(dataDir)
+
+	if err := backfillStationsFromFile(db, filepath.Join(dataDir, "stations.json")); err != nil {
+		return err
+	}
+	if err := backfillSchedulesFromFile(db, filepath.Join(dataDir, "schedules.json")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type stationDataRow struct {
 	UID      string `json:"uid"`
 	ID       string `json:"id"`

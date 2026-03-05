@@ -123,6 +123,64 @@ func TestBackfillFromDataIfEmpty(t *testing.T) {
 	})
 }
 
+func TestBackfillFromDataForce(t *testing.T) {
+	dir := t.TempDir()
+
+	stationsJSON := `[
+  {
+    "uid": "manggarai",
+    "id": "MRI",
+    "name": "Manggarai",
+    "type": "KRL",
+    "metadata": "{\"daop\":1,\"fg_enable\":1}"
+  }
+]`
+	schedulesJSON := `[
+  {
+    "id": "MRI-2200",
+    "train_id": "2200",
+    "line": "Commuter Line Bogor",
+    "route": "BOGOR-JAKARTAKOTA",
+    "origin_id": "BOO",
+    "destination_id": "JAKK",
+    "station_id": "MRI",
+    "departs_at": "2026-03-03 22:07:30+00",
+    "arrives_at": "2026-03-03 22:16:00+00",
+    "metadata": "{\"dest\":\"Jakartakota\",\"ka_name\":\"Commuter Line Bogor\"}"
+  }
+]`
+
+	if err := os.WriteFile(filepath.Join(dir, "stations.json"), []byte(stationsJSON), 0o644); err != nil {
+		t.Fatalf("write stations.json: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "schedules.json"), []byte(schedulesJSON), 0o644); err != nil {
+		t.Fatalf("write schedules.json: %v", err)
+	}
+
+	db := setupBackfillTestDB(t)
+	if err := db.Create(&models.Station{UID: "old", ID: "OLD", Name: "Old Station", Type: "KRL"}).Error; err != nil {
+		t.Fatalf("seed station: %v", err)
+	}
+	if err := db.Create(&models.Schedule{ID: "old-1", TrainID: "old", Line: "old", Route: "old", StationID: "OLD"}).Error; err != nil {
+		t.Fatalf("seed schedule: %v", err)
+	}
+
+	if err := backfillFromDataForce(db, dir); err != nil {
+		t.Fatalf("backfillFromDataForce() error = %v", err)
+	}
+
+	var stationCount int64
+	var scheduleCount int64
+	_ = db.Model(&models.Station{}).Count(&stationCount)
+	_ = db.Model(&models.Schedule{}).Count(&scheduleCount)
+	if stationCount < 2 {
+		t.Fatalf("expected forced station backfill to add data, got stations=%d", stationCount)
+	}
+	if scheduleCount < 2 {
+		t.Fatalf("expected forced schedule backfill to add data, got schedules=%d", scheduleCount)
+	}
+}
+
 func TestResolveBackfillDataDir(t *testing.T) {
 	t.Run("uses explicit data directory when provided", func(t *testing.T) {
 		got := resolveBackfillDataDir("/tmp/custom-data")
