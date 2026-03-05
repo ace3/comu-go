@@ -31,6 +31,19 @@ type tripPlanData struct {
 	} `json:"options"`
 }
 
+func mustWIBTime(t *testing.T, hhmm string) time.Time {
+	t.Helper()
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	ts, err := time.ParseInLocation("2006-01-02 15:04", "2026-03-05 "+hhmm, loc)
+	if err != nil {
+		t.Fatalf("parse time %s: %v", hhmm, err)
+	}
+	return ts
+}
+
 func seedTripPlanSchedules(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
@@ -122,6 +135,101 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 		h.GetTripPlan(c)
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("status = %d, expected 400", w.Code)
+		}
+	})
+
+	t.Run("uses pass-through train even when destination label differs", func(t *testing.T) {
+		db2 := setupTestDB(t)
+		h2 := NewTripPlanHandler(db2, nil)
+		rows := []models.Schedule{
+			{ID: "x-sud", TrainID: "5555B", Line: "Commuter Line Cikarang", Route: "BKS-KPB", OriginID: "BKS", DestinationID: "KPB", StationID: "SUD", DepartsAt: mustWIBTime(t, "16:10"), ArrivesAt: mustWIBTime(t, "16:10")},
+			{ID: "x-du", TrainID: "5555B", Line: "Commuter Line Cikarang", Route: "BKS-KPB", OriginID: "BKS", DestinationID: "KPB", StationID: "DU", DepartsAt: mustWIBTime(t, "16:26"), ArrivesAt: mustWIBTime(t, "16:26")},
+			{ID: "y-du", TrainID: "1978A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "DU", DepartsAt: mustWIBTime(t, "16:54"), ArrivesAt: mustWIBTime(t, "16:54")},
+			{ID: "y-rw", TrainID: "1978A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "RW", DepartsAt: mustWIBTime(t, "17:20"), ArrivesAt: mustWIBTime(t, "17:20")},
+		}
+		for _, row := range rows {
+			if err := db2.Create(&row).Error; err != nil {
+				t.Fatalf("seed row %s: %v", row.ID, err)
+			}
+		}
+
+		body := map[string]any{
+			"from_id":        "SUD",
+			"to_id":          "RW",
+			"at":             "2026-03-05T15:51:00+07:00",
+			"window_minutes": 60,
+			"max_results":    8,
+			"max_transfers":  1,
+		}
+		raw, _ := json.Marshal(body)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h2.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if len(resp.Data.Options) == 0 {
+			t.Fatalf("expected at least one option")
+		}
+		if len(resp.Data.Options[0].Legs) < 2 {
+			t.Fatalf("expected transfer option")
+		}
+		if resp.Data.Options[0].Legs[0].TrainID != "5555B" {
+			t.Fatalf("expected first leg train 5555B, got %s", resp.Data.Options[0].Legs[0].TrainID)
+		}
+	})
+
+	t.Run("supports two transfers", func(t *testing.T) {
+		db3 := setupTestDB(t)
+		h3 := NewTripPlanHandler(db3, nil)
+		rows := []models.Schedule{
+			{ID: "a-a", TrainID: "T1", Line: "L1", Route: "A-B", OriginID: "A", DestinationID: "B", StationID: "A", DepartsAt: mustWIBTime(t, "16:00"), ArrivesAt: mustWIBTime(t, "16:00")},
+			{ID: "a-b", TrainID: "T1", Line: "L1", Route: "A-B", OriginID: "A", DestinationID: "B", StationID: "B", DepartsAt: mustWIBTime(t, "16:10"), ArrivesAt: mustWIBTime(t, "16:10")},
+			{ID: "b-b", TrainID: "T2", Line: "L2", Route: "B-C", OriginID: "B", DestinationID: "C", StationID: "B", DepartsAt: mustWIBTime(t, "16:14"), ArrivesAt: mustWIBTime(t, "16:14")},
+			{ID: "b-c", TrainID: "T2", Line: "L2", Route: "B-C", OriginID: "B", DestinationID: "C", StationID: "C", DepartsAt: mustWIBTime(t, "16:24"), ArrivesAt: mustWIBTime(t, "16:24")},
+			{ID: "c-c", TrainID: "T3", Line: "L3", Route: "C-D", OriginID: "C", DestinationID: "D", StationID: "C", DepartsAt: mustWIBTime(t, "16:28"), ArrivesAt: mustWIBTime(t, "16:28")},
+			{ID: "c-d", TrainID: "T3", Line: "L3", Route: "C-D", OriginID: "C", DestinationID: "D", StationID: "D", DepartsAt: mustWIBTime(t, "16:40"), ArrivesAt: mustWIBTime(t, "16:40")},
+		}
+		for _, row := range rows {
+			if err := db3.Create(&row).Error; err != nil {
+				t.Fatalf("seed row %s: %v", row.ID, err)
+			}
+		}
+
+		body := map[string]any{
+			"from_id":        "A",
+			"to_id":          "D",
+			"at":             "2026-03-05T15:55:00+07:00",
+			"window_minutes": 60,
+			"max_results":    8,
+			"max_transfers":  2,
+		}
+		raw, _ := json.Marshal(body)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+		h3.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if len(resp.Data.Options) == 0 {
+			t.Fatalf("expected one option")
+		}
+		if len(resp.Data.Options[0].Legs) != 3 {
+			t.Fatalf("expected 3 legs, got %d", len(resp.Data.Options[0].Legs))
 		}
 	})
 }

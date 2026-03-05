@@ -540,6 +540,7 @@ async function generateTripPlan() {
         at: now.toISOString(),
         window_minutes: TRIP_PLANNER_WINDOW_MINUTES,
         max_results: PLANNER_MAX_RESULTS,
+        max_transfers: 2,
       }),
     });
 

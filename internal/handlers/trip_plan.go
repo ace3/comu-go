@@ -35,6 +35,7 @@ type tripPlanRequest struct {
 	At            string `json:"at,omitempty"`
 	WindowMinutes int    `json:"window_minutes,omitempty"`
 	MaxResults    int    `json:"max_results,omitempty"`
+	MaxTransfers  int    `json:"max_transfers,omitempty"`
 }
 
 type tripPlanLeg struct {
@@ -64,12 +65,9 @@ type tripPlanResponse struct {
 }
 
 type tripSeed struct {
-	trainID  string
-	line     string
-	fromID   string
-	toID     string
-	departAt time.Time
-	arriveAt time.Time
+	legs      []tripPlanLeg
+	arriveAt  time.Time
+	stationID string
 }
 
 // GetTripPlan godoc
@@ -117,6 +115,14 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 	}
 	if maxResults < 1 || maxResults > 30 {
 		response.BuildError(c, http.StatusBadRequest, "max_results must be between 1 and 30")
+		return
+	}
+	maxTransfers := req.MaxTransfers
+	if maxTransfers == 0 {
+		maxTransfers = 2
+	}
+	if maxTransfers < 0 || maxTransfers > 2 {
+		response.BuildError(c, http.StatusBadRequest, "max_transfers must be between 0 and 2")
 		return
 	}
 
@@ -170,7 +176,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		return
 	}
 
-	options := make([]tripPlanOption, 0, maxResults*8)
+	options := make([]tripPlanOption, 0, maxResults*16)
 	seen := make(map[string]struct{}, maxResults*16)
 	seedsByTransfer := map[string][]tripSeed{}
 	expanded := 0
@@ -202,34 +208,31 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 			}
 
 			seed := tripSeed{
-				trainID:  first.TrainID,
-				line:     first.Line,
-				fromID:   fromID,
-				toID:     stopStation,
-				departAt: first.DepartsAt,
-				arriveAt: arriveAt,
+				legs: []tripPlanLeg{{
+					TrainID:  first.TrainID,
+					Line:     first.Line,
+					From:     fromID,
+					To:       stopStation,
+					DepartAt: first.DepartsAt,
+					ArriveAt: arriveAt,
+				}},
+				arriveAt:  arriveAt,
+				stationID: stopStation,
 			}
 
 			if stopStation == toID {
 				pushOption(&options, seen, tripPlanOption{
-					Legs: []tripPlanLeg{{
-						TrainID:  seed.trainID,
-						Line:     seed.line,
-						From:     seed.fromID,
-						To:       seed.toID,
-						DepartAt: seed.departAt,
-						ArriveAt: seed.arriveAt,
-					}},
-					DepartAt:        seed.departAt,
+					Legs:            append([]tripPlanLeg{}, seed.legs...),
+					DepartAt:        seed.legs[0].DepartAt,
 					ArriveAt:        seed.arriveAt,
-					DurationMinutes: minutesDiff(seed.departAt, seed.arriveAt),
+					DurationMinutes: minutesDiff(seed.legs[0].DepartAt, seed.arriveAt),
 				})
 				continue
 			}
 
-			bucket := seedsByTransfer[seed.toID]
-			if len(bucket) < 6 {
-				seedsByTransfer[seed.toID] = append(bucket, seed)
+			bucket := seedsByTransfer[seed.stationID]
+			if len(bucket) < 8 {
+				seedsByTransfer[seed.stationID] = append(bucket, seed)
 			}
 		}
 	}
@@ -242,7 +245,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		return
 	}
 
-	if len(seedsByTransfer) == 0 {
+	if len(seedsByTransfer) == 0 || maxTransfers == 0 {
 		response.BuildSuccess(c, tripPlanResponse{
 			Options: []tripPlanOption{},
 			Stats:   tripPlanStats{ExpandedStates: expanded, Truncated: false},
@@ -250,117 +253,143 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		return
 	}
 
-	transferIDs := make([]string, 0, len(seedsByTransfer))
-	earliestTransferArrival := time.Time{}
-	latestTransferArrival := time.Time{}
-	for transferID, seeds := range seedsByTransfer {
-		transferIDs = append(transferIDs, transferID)
-		for _, s := range seeds {
-			if earliestTransferArrival.IsZero() || s.arriveAt.Before(earliestTransferArrival) {
-				earliestTransferArrival = s.arriveAt
-			}
-			if latestTransferArrival.IsZero() || s.arriveAt.After(latestTransferArrival) {
-				latestTransferArrival = s.arriveAt
+	currentSeeds := seedsByTransfer
+	for transferStep := 1; transferStep <= maxTransfers; transferStep++ {
+		if len(currentSeeds) == 0 {
+			break
+		}
+		transferIDs := make([]string, 0, len(currentSeeds))
+		earliestTransferArrival := time.Time{}
+		latestTransferArrival := time.Time{}
+		for transferID, seeds := range currentSeeds {
+			transferIDs = append(transferIDs, transferID)
+			for _, s := range seeds {
+				if earliestTransferArrival.IsZero() || s.arriveAt.Before(earliestTransferArrival) {
+					earliestTransferArrival = s.arriveAt
+				}
+				if latestTransferArrival.IsZero() || s.arriveAt.After(latestTransferArrival) {
+					latestTransferArrival = s.arriveAt
+				}
 			}
 		}
-	}
-	sort.Strings(transferIDs)
+		sort.Strings(transferIDs)
 
-	var secondLegDepartures []models.Schedule
-	if err := h.db.WithContext(ctx).
-		Where("station_id IN ? AND departs_at BETWEEN ? AND ?", transferIDs, earliestTransferArrival.Add(tripMinTransfer), latestTransferArrival.Add(tripMaxTransfer)).
-		Order("station_id asc, departs_at asc").
-		Find(&secondLegDepartures).Error; err != nil {
-		if ctx.Err() != nil {
-			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+		var departures []models.Schedule
+		if err := h.db.WithContext(ctx).
+			Where("station_id IN ? AND departs_at BETWEEN ? AND ?", transferIDs, earliestTransferArrival.Add(tripMinTransfer), latestTransferArrival.Add(tripMaxTransfer)).
+			Order("station_id asc, departs_at asc").
+			Find(&departures).Error; err != nil {
+			if ctx.Err() != nil {
+				response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+				return
+			}
+			response.BuildError(c, http.StatusInternalServerError, "failed to fetch transfer schedules")
 			return
 		}
-		response.BuildError(c, http.StatusInternalServerError, "failed to fetch transfer schedules")
-		return
-	}
 
-	secondTrainIDs := uniqTrainIDs(secondLegDepartures)
-	secondRoutes, err := loadRoutesByTrain(ctx, h.db, secondTrainIDs)
-	if err != nil {
-		if ctx.Err() != nil {
-			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+		routesByTrain, err := loadRoutesByTrain(ctx, h.db, uniqTrainIDs(departures))
+		if err != nil {
+			if ctx.Err() != nil {
+				response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
+				return
+			}
+			response.BuildError(c, http.StatusInternalServerError, "failed to fetch transfer routes")
 			return
 		}
-		response.BuildError(c, http.StatusInternalServerError, "failed to fetch second routes")
-		return
-	}
 
-	byTransfer := map[string][]models.Schedule{}
-	for _, s := range secondLegDepartures {
-		stationID := strings.ToUpper(s.StationID)
-		byTransfer[stationID] = append(byTransfer[stationID], s)
-	}
-
-	transferOptions := make([]tripPlanOption, 0, maxResults*8)
-	transferSeen := make(map[string]struct{}, maxResults*16)
-	for _, transferID := range transferIDs {
-		firstLegs := seedsByTransfer[transferID]
-		departures := byTransfer[transferID]
-		if len(firstLegs) == 0 || len(departures) == 0 {
-			continue
+		byTransfer := map[string][]models.Schedule{}
+		for _, s := range departures {
+			stationID := strings.ToUpper(s.StationID)
+			byTransfer[stationID] = append(byTransfer[stationID], s)
 		}
 
-		for _, second := range departures {
-			expanded++
-			secondRoute := secondRoutes[second.TrainID]
-			if len(secondRoute) == 0 {
+		nextSeeds := map[string][]tripSeed{}
+		nextSeedSeen := map[string]struct{}{}
+		for _, transferID := range transferIDs {
+			seedPaths := currentSeeds[transferID]
+			deps := byTransfer[transferID]
+			if len(seedPaths) == 0 || len(deps) == 0 {
 				continue
+			}
+			if len(deps) > 120 {
+				deps = deps[:120]
 			}
 
-			transferIdx := findRouteIndex(secondRoute, transferID, second.DepartsAt.Add(-tripMinTransfer))
-			if transferIdx < 0 {
-				continue
-			}
-			toStopIdx := findDestinationForward(secondRoute, transferIdx, toID)
-			if toStopIdx < 0 {
-				continue
-			}
-			toStop := secondRoute[toStopIdx]
-			toArrive := toStop.ArrivesAt
-			if toArrive.IsZero() {
-				toArrive = toStop.DepartsAt
-			}
-
-			for _, firstLeg := range firstLegs {
-				gap := second.DepartsAt.Sub(firstLeg.arriveAt)
-				if gap < tripMinTransfer || gap > tripMaxTransfer {
+			for _, dep := range deps {
+				expanded++
+				route := routesByTrain[dep.TrainID]
+				if len(route) == 0 {
 					continue
 				}
-
-				option := tripPlanOption{
-					Legs: []tripPlanLeg{
-						{
-							TrainID:  firstLeg.trainID,
-							Line:     firstLeg.line,
-							From:     firstLeg.fromID,
-							To:       firstLeg.toID,
-							DepartAt: firstLeg.departAt,
-							ArriveAt: firstLeg.arriveAt,
-						},
-						{
-							TrainID:  second.TrainID,
-							Line:     second.Line,
-							From:     transferID,
-							To:       toID,
-							DepartAt: second.DepartsAt,
-							ArriveAt: toArrive,
-						},
-					},
-					DepartAt:        firstLeg.departAt,
-					ArriveAt:        toArrive,
-					DurationMinutes: minutesDiff(firstLeg.departAt, toArrive),
+				fromIdx := findRouteIndex(route, transferID, dep.DepartsAt.Add(-tripMinTransfer))
+				if fromIdx < 0 {
+					continue
 				}
-				pushOption(&transferOptions, transferSeen, option)
+				maxForward := fromIdx + 30
+				if maxForward > len(route) {
+					maxForward = len(route)
+				}
+
+				for _, seed := range seedPaths {
+					gap := dep.DepartsAt.Sub(seed.arriveAt)
+					if gap < tripMinTransfer || gap > tripMaxTransfer {
+						continue
+					}
+
+					for i := fromIdx + 1; i < maxForward; i++ {
+						stop := route[i]
+						stopStation := strings.ToUpper(stop.StationID)
+						if stopStation == "" || stopStation == transferID {
+							continue
+						}
+						stopArrive := stop.ArrivesAt
+						if stopArrive.IsZero() {
+							stopArrive = stop.DepartsAt
+						}
+						leg := tripPlanLeg{
+							TrainID:  dep.TrainID,
+							Line:     dep.Line,
+							From:     transferID,
+							To:       stopStation,
+							DepartAt: dep.DepartsAt,
+							ArriveAt: stopArrive,
+						}
+						newLegs := append(append([]tripPlanLeg{}, seed.legs...), leg)
+						if stopStation == toID {
+							pushOption(&options, seen, tripPlanOption{
+								Legs:            newLegs,
+								DepartAt:        newLegs[0].DepartAt,
+								ArriveAt:        stopArrive,
+								DurationMinutes: minutesDiff(newLegs[0].DepartAt, stopArrive),
+							})
+							continue
+						}
+
+						if transferStep >= maxTransfers {
+							continue
+						}
+						next := tripSeed{
+							legs:      newLegs,
+							arriveAt:  stopArrive,
+							stationID: stopStation,
+						}
+						key := optionKey(tripPlanOption{Legs: next.legs, DepartAt: next.legs[0].DepartAt, ArriveAt: next.arriveAt})
+						if _, ok := nextSeedSeen[key]; ok {
+							continue
+						}
+						nextSeedSeen[key] = struct{}{}
+						b := nextSeeds[stopStation]
+						if len(b) < 8 {
+							nextSeeds[stopStation] = append(b, next)
+						}
+					}
+				}
 			}
 		}
+		currentSeeds = nextSeeds
 	}
 
-	final := finalizeTripOptions(transferOptions, maxResults)
+	final := finalizeTripOptions(options, maxResults)
 	response.BuildSuccess(c, tripPlanResponse{
 		Options: final,
 		Stats:   tripPlanStats{ExpandedStates: expanded, Truncated: false},
