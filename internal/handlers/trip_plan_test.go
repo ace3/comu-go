@@ -3,8 +3,12 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -29,6 +33,17 @@ type tripPlanData struct {
 			To      string `json:"to"`
 		} `json:"legs"`
 	} `json:"options"`
+}
+
+type rawScheduleRow struct {
+	TrainID       string `json:"train_id"`
+	Line          string `json:"line"`
+	Route         string `json:"route"`
+	OriginID      string `json:"origin_id"`
+	DestinationID string `json:"destination_id"`
+	StationID     string `json:"station_id"`
+	DepartsAt     string `json:"departs_at"`
+	ArrivesAt     string `json:"arrives_at"`
 }
 
 func mustWIBTime(t *testing.T, hhmm string) time.Time {
@@ -232,4 +247,186 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 			t.Fatalf("expected 3 legs, got %d", len(resp.Data.Options[0].Legs))
 		}
 	})
+}
+
+func loadRealWindowRows(t *testing.T) []models.Schedule {
+	t.Helper()
+	schedulesPath := filepath.Join("..", "..", "data", "schedules.json")
+	raw, err := os.ReadFile(schedulesPath)
+	if err != nil {
+		t.Fatalf("read schedules.json: %v", err)
+	}
+
+	var rows []rawScheduleRow
+	if err := json.Unmarshal(raw, &rows); err != nil {
+		t.Fatalf("unmarshal schedules.json: %v", err)
+	}
+
+	layout := "2006-01-02 15:04:05-07"
+	wib, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		t.Fatalf("load wib location: %v", err)
+	}
+	startUTC := time.Date(2026, 3, 5, 1, 0, 0, 0, time.UTC) // 08:00 WIB
+	endUTC := time.Date(2026, 3, 5, 3, 0, 0, 0, time.UTC)   // 10:00 WIB
+	activeTrains := map[string]struct{}{}
+	for _, row := range rows {
+		dep, parseErr := time.Parse(layout, row.DepartsAt)
+		if parseErr != nil {
+			continue
+		}
+		if (dep.Equal(startUTC) || dep.After(startUTC)) && (dep.Equal(endUTC) || dep.Before(endUTC)) {
+			activeTrains[row.TrainID] = struct{}{}
+		}
+	}
+
+	out := make([]models.Schedule, 0, len(rows)/10)
+	for _, row := range rows {
+		if _, ok := activeTrains[row.TrainID]; !ok {
+			continue
+		}
+		dep, depErr := time.Parse(layout, row.DepartsAt)
+		arr, arrErr := time.Parse(layout, row.ArrivesAt)
+		if depErr != nil || arrErr != nil {
+			continue
+		}
+		out = append(out, models.Schedule{
+			ID:            fmt.Sprintf("%s-%s-%s", row.TrainID, row.StationID, row.DepartsAt),
+			TrainID:       row.TrainID,
+			Line:          row.Line,
+			Route:         row.Route,
+			OriginID:      row.OriginID,
+			DestinationID: row.DestinationID,
+			StationID:     row.StationID,
+			DepartsAt:     dep.In(wib),
+			ArrivesAt:     arr.In(wib),
+		})
+	}
+	return out
+}
+
+func TestTripPlanHandler_RealData_0800_1000WIB(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := setupTestDB(t)
+	rows := loadRealWindowRows(t)
+	if len(rows) == 0 {
+		t.Fatalf("expected real-data rows for 08:00-10:00 WIB window")
+	}
+	for _, row := range rows {
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatalf("seed real row %s: %v", row.ID, err)
+		}
+	}
+
+	h := NewTripPlanHandler(db, nil)
+	type pairCase struct {
+		name string
+		from string
+		to   string
+	}
+
+	at := "2026-03-05T08:00:00+07:00"
+	windowStart := mustWIBTime(t, "08:00")
+	windowEnd := mustWIBTime(t, "10:00")
+	byTrain := map[string][]models.Schedule{}
+	for _, row := range rows {
+		byTrain[row.TrainID] = append(byTrain[row.TrainID], row)
+	}
+	for trainID := range byTrain {
+		sort.Slice(byTrain[trainID], func(i, j int) bool {
+			return byTrain[trainID][i].DepartsAt.Before(byTrain[trainID][j].DepartsAt)
+		})
+	}
+
+	seenPairs := map[string]struct{}{}
+	cases := make([]pairCase, 0, 4)
+	for trainID, route := range byTrain {
+		if len(route) < 2 {
+			continue
+		}
+		for i := 0; i < len(route)-1; i++ {
+			depWIB := route[i].DepartsAt.In(windowStart.Location())
+			if depWIB.Before(windowStart) || depWIB.After(windowEnd) {
+				continue
+			}
+			from := route[i].StationID
+			to := route[i+1].StationID
+			if from == "" || to == "" || from == to {
+				continue
+			}
+			key := from + "->" + to
+			if _, ok := seenPairs[key]; ok {
+				continue
+			}
+			seenPairs[key] = struct{}{}
+			cases = append(cases, pairCase{
+				name: fmt.Sprintf("%s_%s_to_%s", trainID, from, to),
+				from: from,
+				to:   to,
+			})
+			if len(cases) >= 4 {
+				break
+			}
+		}
+		if len(cases) >= 4 {
+			break
+		}
+	}
+	if len(cases) == 0 {
+		t.Fatalf("expected at least one OD pair from 08:00-10:00 WIB real data")
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := map[string]any{
+				"from_id":        tc.from,
+				"to_id":          tc.to,
+				"at":             at,
+				"window_minutes": 120,
+				"max_results":    8,
+				"max_transfers":  2,
+			}
+			raw, _ := json.Marshal(body)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+			c.Request.Header.Set("Content-Type", "application/json")
+			h.GetTripPlan(c)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+			}
+
+			var resp tripPlanTestResponse
+			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("parse response: %v", err)
+			}
+			if !resp.Metadata.Success {
+				t.Fatalf("expected success=true")
+			}
+			if len(resp.Data.Options) == 0 {
+				t.Fatalf("expected options for %s -> %s in real-data window", tc.from, tc.to)
+			}
+			for _, opt := range resp.Data.Options {
+				if len(opt.Legs) > 3 {
+					t.Fatalf("expected max 3 legs (<=2 transfers), got %d", len(opt.Legs))
+				}
+				if opt.DepartAt < at {
+					t.Fatalf("option departAt %s earlier than test window start", opt.DepartAt)
+				}
+			}
+
+			arrivals := make([]string, 0, len(resp.Data.Options))
+			for _, opt := range resp.Data.Options {
+				arrivals = append(arrivals, opt.ArriveAt)
+			}
+			sorted := append([]string(nil), arrivals...)
+			sort.Strings(sorted)
+			for i := range arrivals {
+				if arrivals[i] != sorted[i] {
+					t.Fatalf("options are not sorted by fastest arrival")
+				}
+			}
+		})
+	}
 }
