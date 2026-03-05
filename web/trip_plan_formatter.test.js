@@ -5,6 +5,7 @@ const {
   buildLegDetailText,
   buildTransferDetailText,
   classifyTransferWait,
+  optionHasLongWait,
 } = require("./trip_plan_formatter.js");
 
 function at(hhmm) {
@@ -44,4 +45,22 @@ test("classifyTransferWait marks short transfer as tight", () => {
   assert.equal(classifyTransferWait(3), "tight transfer");
   assert.equal(classifyTransferWait(8), "");
   assert.equal(classifyTransferWait(55), "long wait");
+});
+
+test("optionHasLongWait detects long transfer waits", () => {
+  const longWaitOption = {
+    legs: [
+      { arriveAt: at("15:35") },
+      { departAt: at("16:43") },
+    ],
+  };
+  const safeOption = {
+    legs: [
+      { arriveAt: at("15:35") },
+      { departAt: at("15:48") },
+    ],
+  };
+
+  assert.equal(optionHasLongWait(longWaitOption), true);
+  assert.equal(optionHasLongWait(safeOption), false);
 });

@@ -11,6 +11,7 @@
     maxResults: 8,
     lookbackMs: 10 * 60 * 1000,
     lookaheadMs: 6 * 60 * 60 * 1000,
+    targetTransferWaitMin: 10,
   };
 
   const TERMINAL_CODE_BY_NAME = {
@@ -68,20 +69,25 @@
       return transferDiff;
     }
 
-    // Most recent departure first.
-    const departDiff = b.departAt - a.departAt;
-    if (departDiff !== 0) {
-      return departDiff;
-    }
-
     const waitRankDiff = transferWaitRank(a) - transferWaitRank(b);
     if (waitRankDiff !== 0) {
       return waitRankDiff;
     }
 
+    const waitTargetDiff = transferTargetDelta(a) - transferTargetDelta(b);
+    if (waitTargetDiff !== 0) {
+      return waitTargetDiff;
+    }
+
     const waitMinutesDiff = transferWaitMinutes(a) - transferWaitMinutes(b);
     if (waitMinutesDiff !== 0) {
       return waitMinutesDiff;
+    }
+
+    // Most recent departure first within same transfer quality.
+    const departDiff = b.departAt - a.departAt;
+    if (departDiff !== 0) {
+      return departDiff;
     }
 
     const arriveDiff = a.arriveAt - b.arriveAt;
@@ -113,6 +119,13 @@
       return 1; // Too long.
     }
     return 0; // Safe range.
+  }
+
+  function transferTargetDelta(option) {
+    if (!option || !Array.isArray(option.legs) || option.legs.length < 2) {
+      return 0;
+    }
+    return Math.abs(transferWaitMinutes(option) - DEFAULTS.targetTransferWaitMin);
   }
 
   function finalizeOptions(options, maxResults) {

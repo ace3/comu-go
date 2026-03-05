@@ -24,10 +24,26 @@
     return `Transit at ${stationNameOnly(firstLeg.to)} • arrive ${formatTime(firstLeg.arriveAt)} • depart ${formatTime(secondLeg.departAt)} • wait ${waitMin} min${suffix}`;
   }
 
+  function optionHasLongWait(option) {
+    if (!option || !Array.isArray(option.legs) || option.legs.length < 2) {
+      return false;
+    }
+    for (let i = 0; i < option.legs.length - 1; i++) {
+      const first = option.legs[i];
+      const second = option.legs[i + 1];
+      const waitMin = diffMinutes(first.arriveAt, second.departAt);
+      if (classifyTransferWait(waitMin) === "long wait") {
+        return true;
+      }
+    }
+    return false;
+  }
+
   const api = {
     buildLegDetailText,
     buildTransferDetailText,
     classifyTransferWait,
+    optionHasLongWait,
   };
 
   if (typeof module !== "undefined" && module.exports) {

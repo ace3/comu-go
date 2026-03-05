@@ -108,7 +108,7 @@ test("Rawa Buaya -> Sudirman Baru returns one transfer at Duri", async () => {
   assert.equal(first.legs[1].to, "SUDB");
 });
 
-test("one-transfer options are ordered by latest departure then safe-short transfer wait", async () => {
+test("one-transfer options are ordered by nearest safe transfer before long/tight waits", async () => {
   const customRoutesByTrainID = {
     F1: [
       stop("RW", "14:00"),
@@ -165,8 +165,8 @@ test("one-transfer options are ordered by latest departure then safe-short trans
   assert.equal(result.options.length, 6);
   assert.equal(result.options[0].legs[0].trainId, "F2");
   assert.equal(result.options[0].legs[1].trainId, "SAFE");
-  assert.equal(result.options[1].legs[0].trainId, "F2");
-  assert.equal(result.options[1].legs[1].trainId, "LONG");
-  assert.equal(result.options[2].legs[0].trainId, "F2");
-  assert.equal(result.options[2].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[1].legs[0].trainId, "F1");
+  assert.equal(result.options[1].legs[1].trainId, "TIGHT");
+  assert.equal(result.options[2].legs[0].trainId, "F1");
+  assert.equal(result.options[2].legs[1].trainId, "SAFE");
 });

@@ -1,5 +1,6 @@
 const STORAGE_KEY = "comu.preferred_stations";
 const COOKIE_KEY = "preferred_stations";
+const TRIP_PLANNER_PREFS_KEY = "comu.trip_planner_prefs";
 const MAX_STATIONS = 5;
 const WINDOW_BEFORE_MINUTES = 10;
 const WINDOW_AFTER_MINUTES = 60;
@@ -22,6 +23,7 @@ const cardsNode = document.getElementById("cards");
 const planFrom = document.getElementById("plan-from");
 const planTo = document.getElementById("plan-to");
 const planShowAll = document.getElementById("plan-show-all");
+const planShowLongWait = document.getElementById("plan-show-long-wait");
 const planButton = document.getElementById("plan-trip");
 const planStatusNode = document.getElementById("plan-status");
 const planResultsNode = document.getElementById("plan-results");
@@ -31,6 +33,8 @@ let preferredStations = [];
 let selectedSet = new Set();
 const routeCache = new Map();
 const stationScheduleCache = new Map();
+let lastTripOptions = [];
+let lastTripStats = null;
 const tripPlanFormatter = window.TripPlanFormatter || {
   buildLegDetailText: (leg, formatTime, stationNameOnlyFn) =>
     `${stationNameOnlyFn(leg.from)} dep ${formatTime(leg.departAt)} • ${stationNameOnlyFn(leg.to)} arr ${formatTime(leg.arriveAt)}`,
@@ -39,6 +43,7 @@ const tripPlanFormatter = window.TripPlanFormatter || {
     return `Transit at ${stationNameOnlyFn(firstLeg.to)} • arrive ${formatTime(firstLeg.arriveAt)} • depart ${formatTime(secondLeg.departAt)} • wait ${waitMin} min`;
   },
   classifyTransferWait: () => "",
+  optionHasLongWait: () => false,
 };
 
 function sanitizeStationIDs(input) {
@@ -104,6 +109,28 @@ function savePreferredStations(stationIDs) {
   } catch (_) {
   }
   setCookie(COOKIE_KEY, JSON.stringify(sanitized), 30);
+}
+
+function readTripPlannerPrefs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TRIP_PLANNER_PREFS_KEY) || "{}");
+    return {
+      fromID: String(raw.fromID || "").toUpperCase(),
+      toID: String(raw.toID || "").toUpperCase(),
+      showLongWait: Boolean(raw.showLongWait),
+    };
+  } catch (_) {
+    return { fromID: "", toID: "", showLongWait: false };
+  }
+}
+
+function saveTripPlannerPrefs(partial) {
+  const current = readTripPlannerPrefs();
+  const next = { ...current, ...partial };
+  try {
+    localStorage.setItem(TRIP_PLANNER_PREFS_KEY, JSON.stringify(next));
+  } catch (_) {
+  }
 }
 
 function showStatus(message, isError = false) {
@@ -333,13 +360,6 @@ function yieldToBrowser() {
 
 function renderTripPlans(options) {
   planResultsNode.innerHTML = "";
-
-  if (options.length === 0) {
-    showPlanStatus("No route option found in current window.", true);
-    return;
-  }
-
-  showPlanStatus(`${options.length} option(s) found.`);
   for (const option of options) {
     const card = document.createElement("article");
     card.className = "rounded-xl border border-slate-200 bg-white p-3";
@@ -406,6 +426,38 @@ function renderTripPlans(options) {
   }
 }
 
+function getFilteredTripOptions(options) {
+  const showLongWait = Boolean(planShowLongWait && planShowLongWait.checked);
+  if (showLongWait) {
+    return { visible: options, hiddenLongWaitCount: 0 };
+  }
+  const visible = options.filter((option) => !tripPlanFormatter.optionHasLongWait(option));
+  return { visible, hiddenLongWaitCount: options.length - visible.length };
+}
+
+function renderTripPlansWithStatus(options, stats) {
+  const { visible, hiddenLongWaitCount } = getFilteredTripOptions(options);
+  renderTripPlans(visible);
+
+  if (visible.length === 0) {
+    if (hiddenLongWaitCount > 0) {
+      showPlanStatus(`No option shown. ${hiddenLongWaitCount} long-wait option(s) hidden. Enable "Show long-wait transit options" to view.`);
+      return;
+    }
+    showPlanStatus("No route option found in current window.", true);
+    return;
+  }
+
+  let message = `${visible.length} option(s) found.`;
+  if (hiddenLongWaitCount > 0) {
+    message += ` ${hiddenLongWaitCount} long-wait option(s) hidden.`;
+  }
+  if (stats?.truncated) {
+    message += " Showing best bounded results.";
+  }
+  showPlanStatus(message);
+}
+
 async function generateTripPlan() {
   const fromID = String(planFrom.value || "").toUpperCase();
   const toID = String(planTo.value || "").toUpperCase();
@@ -421,6 +473,8 @@ async function generateTripPlan() {
   planButton.disabled = true;
   planResultsNode.innerHTML = "";
   showPlanStatus("Generating routes...");
+  lastTripOptions = [];
+  lastTripStats = null;
 
   try {
     const originSchedules = await fetchStationSchedules(fromID);
@@ -446,10 +500,9 @@ async function generateTripPlan() {
       },
     });
 
-    renderTripPlans(options);
-    if (stats?.truncated) {
-      showPlanStatus(`Showing best ${options.length} result(s) from bounded search.`);
-    }
+    lastTripOptions = options;
+    lastTripStats = stats || null;
+    renderTripPlansWithStatus(options, stats);
     await yieldToBrowser();
   } catch (_) {
     showPlanStatus("Failed to generate route options. Please retry.", true);
@@ -473,8 +526,9 @@ function getPlannerStations() {
 }
 
 function populateTripPlannerOptions() {
-  const currentFrom = String(planFrom.value || "").toUpperCase();
-  const currentTo = String(planTo.value || "").toUpperCase();
+  const prefs = readTripPlannerPrefs();
+  const currentFrom = String(planFrom.value || prefs.fromID || "").toUpperCase();
+  const currentTo = String(planTo.value || prefs.toID || "").toUpperCase();
   const plannerStations = getPlannerStations();
   const options = plannerStations
     .map((station) => `<option value="${station.id}">${station.name} (${station.id})</option>`)
@@ -487,6 +541,9 @@ function populateTripPlannerOptions() {
   }
   if (plannerStations.some((station) => station.id === currentTo)) {
     planTo.value = currentTo;
+  }
+  if (planShowLongWait) {
+    planShowLongWait.checked = Boolean(prefs.showLongWait);
   }
 }
 
@@ -590,6 +647,20 @@ async function init() {
   stationSearch.addEventListener("input", renderStationPicker);
   planButton.addEventListener("click", generateTripPlan);
   planShowAll.addEventListener("change", populateTripPlannerOptions);
+  if (planShowLongWait) {
+    planShowLongWait.addEventListener("change", () => {
+      saveTripPlannerPrefs({ showLongWait: Boolean(planShowLongWait.checked) });
+      if (lastTripOptions.length > 0) {
+        renderTripPlansWithStatus(lastTripOptions, lastTripStats);
+      }
+    });
+  }
+  planFrom.addEventListener("change", () => {
+    saveTripPlannerPrefs({ fromID: String(planFrom.value || "").toUpperCase() });
+  });
+  planTo.addEventListener("change", () => {
+    saveTripPlannerPrefs({ toID: String(planTo.value || "").toUpperCase() });
+  });
 
   saveButton.addEventListener("click", async () => {
     savePreferredStations(Array.from(selectedSet));
