@@ -147,6 +147,12 @@ func syncStationSchedules(cfg *config.Config, db *gorm.DB, stationID string) err
 	for _, s := range items {
 		departsAt := parseScheduleTime(s.TimeEst, today, loc)
 		arrivesAt := parseScheduleTime(s.DestTime, today, loc)
+		// DestTime is the arrival at the final destination. For trains crossing midnight
+		// (e.g. late-night services), the stored time may be earlier in the day than the
+		// departure time. Advance by 24h to keep it chronologically after the departure.
+		if !arrivesAt.IsZero() && arrivesAt.Before(departsAt) {
+			arrivesAt = arrivesAt.Add(24 * time.Hour)
+		}
 
 		meta, _ := json.Marshal(map[string]any{
 			"ka_name": fixName(s.KaName),

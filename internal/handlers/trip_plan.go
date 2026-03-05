@@ -262,10 +262,10 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 			}
 			expanded++
 
-			arriveAt := stop.ArrivesAt
-			if arriveAt.IsZero() {
-				arriveAt = stop.DepartsAt
-			}
+			// ArrivesAt in the DB stores the DestTime (final destination arrival), not the
+			// arrival at this specific stop. Use DepartsAt as the proxy for "time at this
+			// station" — it avoids midnight-crossing bugs from overnight DestTime values.
+			arriveAt := stop.DepartsAt
 
 			seed := tripSeed{
 				legs: []tripPlanLeg{{
@@ -424,10 +424,8 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 						if stopStation == "" || stopStation == transferID {
 							continue
 						}
-						stopArrive := stop.ArrivesAt
-						if stopArrive.IsZero() {
-							stopArrive = stop.DepartsAt
-						}
+						// ArrivesAt is the DestTime (final destination), not this stop's arrival.
+						stopArrive := stop.DepartsAt
 						leg := tripPlanLeg{
 							TrainID:  dep.TrainID,
 							Line:     dep.Line,
