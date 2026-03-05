@@ -7,6 +7,9 @@ services:
     expose:
       - "${PORT:-8080}"
     env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgres://${POSTGRES_USER:-comu}:${POSTGRES_PASSWORD:-comu}@postgres:5432/${POSTGRES_DB:-comuapi}?sslmode=disable}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://redis:6379}
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,6 +27,9 @@ services:
       dockerfile: Dockerfile.bot
     restart: unless-stopped
     env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgres://${POSTGRES_USER:-comu}:${POSTGRES_PASSWORD:-comu}@postgres:5432/${POSTGRES_DB:-comuapi}?sslmode=disable}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://redis:6379}
     depends_on:
       postgres:
         condition: service_healthy

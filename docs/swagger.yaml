@@ -1,0 +1,395 @@
+basePath: /
+definitions:
+  handlers.MRTRouteResponse:
+    properties:
+      color:
+        type: string
+      line:
+        type: string
+      stops:
+        items:
+          $ref: '#/definitions/handlers.MRTRouteStop'
+        type: array
+    type: object
+  handlers.MRTRouteStop:
+    properties:
+      name:
+        type: string
+      station_id:
+        type: string
+    type: object
+  handlers.RouteDetails:
+    properties:
+      destination_id:
+        type: string
+      line:
+        type: string
+      origin_id:
+        type: string
+      route:
+        type: string
+      train_id:
+        type: string
+    type: object
+  handlers.RouteResponse:
+    properties:
+      details:
+        $ref: '#/definitions/handlers.RouteDetails'
+      routes:
+        items:
+          $ref: '#/definitions/handlers.RouteStop'
+        type: array
+    type: object
+  handlers.RouteStop:
+    properties:
+      arrives_at:
+        type: string
+      departs_at:
+        type: string
+      station_id:
+        type: string
+    type: object
+  models.Schedule:
+    properties:
+      arrives_at:
+        type: string
+      created_at:
+        type: string
+      departs_at:
+        type: string
+      destination_id:
+        type: string
+      id:
+        type: string
+      line:
+        type: string
+      metadata:
+        type: object
+      origin_id:
+        type: string
+      route:
+        type: string
+      station_id:
+        type: string
+      train_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Station:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      metadata:
+        type: object
+      name:
+        type: string
+      type:
+        description: KRL, MRT, LRT, LOCAL
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  response.Metadata:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.PaginatedMetadata:
+    properties:
+      limit:
+        type: integer
+      message:
+        type: string
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  response.PaginatedResponse:
+    properties:
+      data: {}
+      metadata:
+        $ref: '#/definitions/response.PaginatedMetadata'
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      metadata:
+        $ref: '#/definitions/response.Metadata'
+    type: object
+host: api.comu.com
+info:
+  contact: {}
+  description: Indonesian KRL Commuter Line Schedule API
+  title: Comu API
+  version: "1.0"
+paths:
+  /v1/mrt/routes:
+    get:
+      description: Returns the MRT North-South Line route with all stations in order.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.MRTRouteResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get MRT route information
+      tags:
+      - mrt
+  /v1/mrt/schedules/{station_id}:
+    get:
+      description: Returns all MRT train schedules for a station, ordered by departure
+        time.
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Schedule'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get MRT schedules by station ID
+      tags:
+      - mrt
+  /v1/mrt/stations:
+    get:
+      description: Returns all MRT Jakarta North-South Line stations.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Station'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: List all MRT stations
+      tags:
+      - mrt
+  /v1/mrt/stations/{id}:
+    get:
+      description: Returns a single MRT station by its uppercase ID (e.g. LBB for
+        Lebak Bulus).
+      parameters:
+      - description: Station ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Station'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get MRT station by ID
+      tags:
+      - mrt
+  /v1/route/{train_id}:
+    get:
+      description: Returns the ordered stop list and route details for a given train
+        ID.
+      parameters:
+      - description: Train ID
+        in: path
+        name: train_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.RouteResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get train route with stop sequence
+      tags:
+      - route
+  /v1/schedule/{station_id}:
+    get:
+      description: Returns all train schedules for a station, ordered by departure
+        time.
+      parameters:
+      - description: Station ID
+        in: path
+        name: station_id
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Results per page (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Schedule'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get schedules by station ID
+      tags:
+      - schedule
+  /v1/station:
+    get:
+      description: Returns all KRL stations, served from Redis cache when available.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Results per page (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Station'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: List all stations
+      tags:
+      - station
+  /v1/station/{id}:
+    get:
+      description: Returns a single station by its uppercase ID (e.g. MRI for Manggarai).
+      parameters:
+      - description: Station ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Station'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get station by ID
+      tags:
+      - station
+swagger: "2.0"

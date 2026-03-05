@@ -1,73 +1,631 @@
 {
-  "swagger": "2.0",
-  "info": {
-    "description": "Indonesian KRL Commuter Line Schedule API",
-    "title": "Comu API",
-    "contact": {},
-    "version": "1.0"
-  },
-  "host": "localhost:8080",
-  "basePath": "/",
-  "paths": {
-    "/status": {
-      "get": {
-        "description": "Returns {\"status\":\"ok\"} when the server is running.",
-        "produces": ["application/json"],
-        "summary": "Health check",
-        "tags": ["system"],
-        "responses": {
-          "200": {"description": "OK"}
-        }
-      }
+    "swagger": "2.0",
+    "info": {
+        "description": "Indonesian KRL Commuter Line Schedule API",
+        "title": "Comu API",
+        "contact": {},
+        "version": "1.0"
     },
-    "/v1/station": {
-      "get": {
-        "description": "Returns all KRL stations, served from Redis cache when available.",
-        "produces": ["application/json"],
-        "summary": "List all stations",
-        "tags": ["station"],
-        "responses": {
-          "200": {"description": "OK"}
+    "host": "api.comu.com",
+    "basePath": "/",
+    "paths": {
+        "/v1/mrt/routes": {
+            "get": {
+                "description": "Returns the MRT North-South Line route with all stations in order.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mrt"
+                ],
+                "summary": "Get MRT route information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.MRTRouteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/mrt/schedules/{station_id}": {
+            "get": {
+                "description": "Returns all MRT train schedules for a station, ordered by departure time.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mrt"
+                ],
+                "summary": "Get MRT schedules by station ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Schedule"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/mrt/stations": {
+            "get": {
+                "description": "Returns all MRT Jakarta North-South Line stations.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mrt"
+                ],
+                "summary": "List all MRT stations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Station"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/mrt/stations/{id}": {
+            "get": {
+                "description": "Returns a single MRT station by its uppercase ID (e.g. LBB for Lebak Bulus).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mrt"
+                ],
+                "summary": "Get MRT station by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Station ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Station"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/route/{train_id}": {
+            "get": {
+                "description": "Returns the ordered stop list and route details for a given train ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "route"
+                ],
+                "summary": "Get train route with stop sequence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Train ID",
+                        "name": "train_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.RouteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/schedule/{station_id}": {
+            "get": {
+                "description": "Returns all train schedules for a station, ordered by departure time.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedule"
+                ],
+                "summary": "Get schedules by station ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Station ID",
+                        "name": "station_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Results per page (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.PaginatedResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Schedule"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/station": {
+            "get": {
+                "description": "Returns all KRL stations, served from Redis cache when available.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "station"
+                ],
+                "summary": "List all stations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Results per page (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.PaginatedResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Station"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/station/{id}": {
+            "get": {
+                "description": "Returns a single station by its uppercase ID (e.g. MRI for Manggarai).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "station"
+                ],
+                "summary": "Get station by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Station ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Station"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
         }
-      }
     },
-    "/v1/station/{id}": {
-      "get": {
-        "description": "Returns a single station by its uppercase ID.",
-        "produces": ["application/json"],
-        "summary": "Get station by ID",
-        "tags": ["station"],
-        "parameters": [{"in": "path", "name": "id", "required": true, "type": "string"}],
-        "responses": {
-          "200": {"description": "OK"},
-          "404": {"description": "Not Found"}
+    "definitions": {
+        "handlers.MRTRouteResponse": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "line": {
+                    "type": "string"
+                },
+                "stops": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.MRTRouteStop"
+                    }
+                }
+            }
+        },
+        "handlers.MRTRouteStop": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "station_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RouteDetails": {
+            "type": "object",
+            "properties": {
+                "destination_id": {
+                    "type": "string"
+                },
+                "line": {
+                    "type": "string"
+                },
+                "origin_id": {
+                    "type": "string"
+                },
+                "route": {
+                    "type": "string"
+                },
+                "train_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RouteResponse": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "$ref": "#/definitions/handlers.RouteDetails"
+                },
+                "routes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.RouteStop"
+                    }
+                }
+            }
+        },
+        "handlers.RouteStop": {
+            "type": "object",
+            "properties": {
+                "arrives_at": {
+                    "type": "string"
+                },
+                "departs_at": {
+                    "type": "string"
+                },
+                "station_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Schedule": {
+            "type": "object",
+            "properties": {
+                "arrives_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "departs_at": {
+                    "type": "string"
+                },
+                "destination_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "line": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object"
+                },
+                "origin_id": {
+                    "type": "string"
+                },
+                "route": {
+                    "type": "string"
+                },
+                "station_id": {
+                    "type": "string"
+                },
+                "train_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Station": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "KRL, MRT, LRT, LOCAL",
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Metadata": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.PaginatedMetadata": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.PaginatedResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "metadata": {
+                    "$ref": "#/definitions/response.PaginatedMetadata"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "metadata": {
+                    "$ref": "#/definitions/response.Metadata"
+                }
+            }
         }
-      }
-    },
-    "/v1/schedule/{station_id}": {
-      "get": {
-        "description": "Returns all train schedules for a station, ordered by departure time.",
-        "produces": ["application/json"],
-        "summary": "Get schedules by station ID",
-        "tags": ["schedule"],
-        "parameters": [{"in": "path", "name": "station_id", "required": true, "type": "string"}],
-        "responses": {
-          "200": {"description": "OK"}
-        }
-      }
-    },
-    "/v1/route/{train_id}": {
-      "get": {
-        "description": "Returns the ordered stop list and route details for a given train ID.",
-        "produces": ["application/json"],
-        "summary": "Get train route with stop sequence",
-        "tags": ["route"],
-        "parameters": [{"in": "path", "name": "train_id", "required": true, "type": "string"}],
-        "responses": {
-          "200": {"description": "OK"},
-          "404": {"description": "Not Found"}
-        }
-      }
     }
-  }
 }

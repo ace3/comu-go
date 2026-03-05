@@ -17,7 +17,7 @@ type Schedule struct {
 	StationID     string         `gorm:"index" json:"station_id"`
 	DepartsAt     time.Time      `json:"departs_at"`
 	ArrivesAt     time.Time      `json:"arrives_at"`
-	Metadata      datatypes.JSON `gorm:"type:jsonb" json:"metadata"`
+	Metadata      datatypes.JSON `gorm:"type:jsonb" json:"metadata" swaggertype:"object"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 }
