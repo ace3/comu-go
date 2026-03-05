@@ -115,6 +115,20 @@ func main() {
 		gc.JSON(http.StatusAccepted, gin.H{"message": "sync started"})
 	})
 
+	// Token rotation — update KAI_AUTH_TOKEN in memory without restarting.
+	// Protected by the same X-Sync-Secret header as /sync.
+	syncGroup.POST("/admin/rotate-token", func(gc *gin.Context) {
+		var body struct {
+			Token string `json:"token" binding:"required"`
+		}
+		if err := gc.ShouldBindJSON(&body); err != nil {
+			gc.JSON(http.StatusBadRequest, gin.H{"error": "token field required"})
+			return
+		}
+		cfg.RotateToken(body.Token)
+		gc.JSON(http.StatusOK, gin.H{"message": "token rotated"})
+	})
+
 	// API v1
 	v1 := r.Group("/v1")
 	{

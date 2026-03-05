@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/joho/godotenv"
 )
@@ -14,12 +15,32 @@ type Config struct {
 	RedisURL      string
 	Port          string
 	Env           string
-	KAIAuthToken  string
+	KAIAuthToken  string // initial value loaded from env; use Token() at runtime
 	SyncSecret    string
 	TelegramToken string
 	OpenMeteoBase string
 	Timezone      string
 	AutoSync      bool
+
+	liveToken atomic.Pointer[string] // hot-reloadable token, set by RotateToken
+}
+
+// Token returns the current KAI auth token. It prefers the live (rotated) value
+// over the initial value loaded from the environment.
+func (c *Config) Token() string {
+	if p := c.liveToken.Load(); p != nil {
+		return *p
+	}
+	return c.KAIAuthToken
+}
+
+// RotateToken replaces the in-memory token without restarting the process.
+// The change takes effect immediately for all subsequent sync calls.
+// Note: this does not persist the new token to disk — update KAI_AUTH_TOKEN
+// in your .env / secrets manager and restart to make it permanent.
+func (c *Config) RotateToken(newToken string) {
+	c.liveToken.Store(&newToken)
+	slog.Info("KAI auth token rotated in memory")
 }
 
 func Load() *Config {

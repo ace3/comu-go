@@ -60,7 +60,7 @@ func SyncStations(cfg *config.Config, db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
-	setKRLHeaders(req, cfg.KAIAuthToken)
+	setKRLHeaders(req, cfg.Token())
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := fetchWithRetry(client, req, 3)
