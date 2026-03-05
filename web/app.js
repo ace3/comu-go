@@ -3,6 +3,10 @@ const COOKIE_KEY = "preferred_stations";
 const MAX_STATIONS = 5;
 const WINDOW_BEFORE_MINUTES = 10;
 const WINDOW_AFTER_MINUTES = 60;
+const PLANNER_MAX_RUNTIME_MS = 4500;
+const PLANNER_MAX_EXPANDED_STATES = 450;
+const PLANNER_MAX_QUEUE_SIZE = 700;
+const PLANNER_MAX_RESULTS = 8;
 const WIB_ZONE = "Asia/Jakarta";
 const API_BASE = "/v1";
 
@@ -316,6 +320,10 @@ function diffMinutes(from, to) {
   return Math.max(0, Math.round((to.getTime() - from.getTime()) / 60000));
 }
 
+function yieldToBrowser() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 function optionKey(option) {
   return option.legs.map((leg) => `${leg.trainId}:${leg.from}->${leg.to}@${leg.departAt.toISOString()}`).join("|");
 }
@@ -394,6 +402,7 @@ async function generateTripPlan() {
   showPlanStatus("Generating routes...");
 
   try {
+    const startedAt = Date.now();
     const { windowMinutes, at } = buildWindowParams();
     const qs = new URLSearchParams({
       station_ids: fromID,
@@ -402,7 +411,7 @@ async function generateTripPlan() {
     });
     const payload = await fetchWithTimeout(`${API_BASE}/schedule/window?${qs.toString()}`);
     const schedules = payload?.data?.stations?.[0]?.schedules || [];
-    const firstLegCandidates = schedules.slice(0, 10);
+    const firstLegCandidates = schedules.slice(0, 8);
     if (firstLegCandidates.length === 0) {
       showPlanStatus("No departures found from selected origin in current window.", true);
       return;
@@ -414,6 +423,9 @@ async function generateTripPlan() {
     const MAX_TRANSFERS = 3;
     const MIN_TRANSFER_MS = 2 * 60 * 1000;
     const MAX_TRANSFER_MS = 120 * 60 * 1000;
+    const MAX_CANDIDATE_DEPARTURES = 12;
+    const MAX_FORWARD_STOPS = 8;
+    let expandedStates = 0;
 
     for (const first of firstLegCandidates) {
       const departAt = new Date(first.departs_at);
@@ -425,7 +437,7 @@ async function generateTripPlan() {
       if (fromIdx < 0) {
         continue;
       }
-      const maxForwardStops = Math.min(route.length, fromIdx + 12);
+      const maxForwardStops = Math.min(route.length, fromIdx + MAX_FORWARD_STOPS);
       for (let i = fromIdx + 1; i < maxForwardStops; i++) {
         const nextStation = String(route[i].station_id || "").toUpperCase();
         if (!nextStation || nextStation === fromID) {
@@ -446,12 +458,29 @@ async function generateTripPlan() {
           legs: [leg],
           visited: new Set([fromID, nextStation]),
         });
+        if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
+          break;
+        }
+      }
+      if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
+        break;
       }
     }
 
-    while (queue.length > 0 && planOptions.length < 12) {
+    while (queue.length > 0 && planOptions.length < PLANNER_MAX_RESULTS) {
+      if (Date.now() - startedAt > PLANNER_MAX_RUNTIME_MS) {
+        break;
+      }
+      if (expandedStates >= PLANNER_MAX_EXPANDED_STATES) {
+        break;
+      }
       queue.sort((a, b) => a.arriveAt - b.arriveAt);
       const current = queue.shift();
+      expandedStates += 1;
+      if (expandedStates % 20 === 0) {
+        showPlanStatus(`Generating routes... explored ${expandedStates} states`);
+        await yieldToBrowser();
+      }
       const legs = current.legs;
       const lastLeg = legs[legs.length - 1];
 
@@ -481,7 +510,7 @@ async function generateTripPlan() {
           const gap = depart.getTime() - current.arriveAt.getTime();
           return gap >= MIN_TRANSFER_MS && gap <= MAX_TRANSFER_MS;
         })
-        .slice(0, 25);
+        .slice(0, MAX_CANDIDATE_DEPARTURES);
 
       for (const next of candidateDepartures) {
         const nextDepartAt = new Date(next.departs_at);
@@ -494,7 +523,7 @@ async function generateTripPlan() {
           continue;
         }
 
-        const maxForwardStops = Math.min(nextRoute.length, boardIdx + 12);
+        const maxForwardStops = Math.min(nextRoute.length, boardIdx + MAX_FORWARD_STOPS);
         for (let i = boardIdx + 1; i < maxForwardStops; i++) {
           const nextStation = String(nextRoute[i].station_id || "").toUpperCase();
           if (!nextStation || current.visited.has(nextStation)) {
@@ -517,12 +546,21 @@ async function generateTripPlan() {
             legs: [...legs, nextLeg],
             visited: nextVisited,
           });
+          if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
+            break;
+          }
+        }
+        if (queue.length >= PLANNER_MAX_QUEUE_SIZE) {
+          break;
         }
       }
     }
 
     planOptions.sort((a, b) => a.departAt - b.departAt || a.arriveAt - b.arriveAt);
-    renderTripPlans(planOptions.slice(0, 8));
+    renderTripPlans(planOptions.slice(0, PLANNER_MAX_RESULTS));
+    if (Date.now() - startedAt > PLANNER_MAX_RUNTIME_MS || expandedStates >= PLANNER_MAX_EXPANDED_STATES) {
+      showPlanStatus(`Showing best ${Math.min(planOptions.length, PLANNER_MAX_RESULTS)} result(s) from bounded search.`);
+    }
   } catch (_) {
     showPlanStatus("Failed to generate route options. Please retry.", true);
   } finally {
