@@ -107,3 +107,66 @@ test("Rawa Buaya -> Sudirman Baru returns one transfer at Duri", async () => {
   assert.equal(first.legs[1].from, "DU");
   assert.equal(first.legs[1].to, "SUDB");
 });
+
+test("one-transfer options are ordered by latest departure then safe-short transfer wait", async () => {
+  const customRoutesByTrainID = {
+    F1: [
+      stop("RW", "14:00"),
+      stop("DU", "14:10"),
+    ],
+    F2: [
+      stop("RW", "14:20"),
+      stop("DU", "14:30"),
+    ],
+    TIGHT: [
+      stop("DU", "14:32"),
+      stop("SUDB", "14:50"),
+    ],
+    SAFE: [
+      stop("DU", "14:38"),
+      stop("SUDB", "14:55"),
+    ],
+    LONG: [
+      stop("DU", "15:10"),
+      stop("SUDB", "15:25"),
+    ],
+  };
+
+  const customSchedulesByStation = {
+    RW: [
+      { train_id: "F1", line: "Commuter Line Tangerang", departs_at: iso("14:00") },
+      { train_id: "F2", line: "Commuter Line Tangerang", departs_at: iso("14:20") },
+    ],
+    DU: [
+      { train_id: "TIGHT", line: "Commuter Line Cikarang", departs_at: iso("14:32") },
+      { train_id: "SAFE", line: "Commuter Line Cikarang", departs_at: iso("14:38") },
+      { train_id: "LONG", line: "Commuter Line Cikarang", departs_at: iso("15:10") },
+    ],
+  };
+
+  async function customGetRoute(trainID) {
+    return customRoutesByTrainID[trainID] || [];
+  }
+
+  async function customGetStationSchedules(stationID) {
+    return customSchedulesByStation[stationID] || [];
+  }
+
+  const result = await findTripOptions({
+    fromID: "RW",
+    toID: "SUDB",
+    now: new Date(iso("13:50")),
+    firstLegSchedules: customSchedulesByStation.RW,
+    getRoute: customGetRoute,
+    getStationSchedules: customGetStationSchedules,
+    config: { maxResults: 6 },
+  });
+
+  assert.equal(result.options.length, 6);
+  assert.equal(result.options[0].legs[0].trainId, "F2");
+  assert.equal(result.options[0].legs[1].trainId, "SAFE");
+  assert.equal(result.options[1].legs[0].trainId, "F2");
+  assert.equal(result.options[1].legs[1].trainId, "LONG");
+  assert.equal(result.options[2].legs[0].trainId, "F2");
+  assert.equal(result.options[2].legs[1].trainId, "TIGHT");
+});

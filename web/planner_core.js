@@ -67,15 +67,52 @@
     if (transferDiff !== 0) {
       return transferDiff;
     }
+
+    // Most recent departure first.
+    const departDiff = b.departAt - a.departAt;
+    if (departDiff !== 0) {
+      return departDiff;
+    }
+
+    const waitRankDiff = transferWaitRank(a) - transferWaitRank(b);
+    if (waitRankDiff !== 0) {
+      return waitRankDiff;
+    }
+
+    const waitMinutesDiff = transferWaitMinutes(a) - transferWaitMinutes(b);
+    if (waitMinutesDiff !== 0) {
+      return waitMinutesDiff;
+    }
+
     const arriveDiff = a.arriveAt - b.arriveAt;
     if (arriveDiff !== 0) {
       return arriveDiff;
     }
-    const departDiff = a.departAt - b.departAt;
-    if (departDiff !== 0) {
-      return departDiff;
-    }
+
     return a.durationMinutes - b.durationMinutes;
+  }
+
+  function transferWaitMinutes(option) {
+    if (!option || !Array.isArray(option.legs) || option.legs.length < 2) {
+      return 0;
+    }
+    const first = option.legs[0];
+    const second = option.legs[1];
+    return diffMinutes(first.arriveAt, second.departAt);
+  }
+
+  function transferWaitRank(option) {
+    if (!option || !Array.isArray(option.legs) || option.legs.length < 2) {
+      return 0;
+    }
+    const waitMin = transferWaitMinutes(option);
+    if (waitMin < 5) {
+      return 2; // Too tight.
+    }
+    if (waitMin > 25) {
+      return 1; // Too long.
+    }
+    return 0; // Safe range.
   }
 
   function finalizeOptions(options, maxResults) {
