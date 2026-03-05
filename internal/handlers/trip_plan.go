@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	tripMinTransfer = 2 * time.Minute
+	tripMinTransfer = 1 * time.Minute
 	tripMaxTransfer = 240 * time.Minute
 )
 

@@ -502,6 +502,7 @@ function renderTripPlans(options) {
         altContent.className = "mt-1.5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-500";
         altContent.textContent = "Loading…";
 
+        const destStationID = option.legs[option.legs.length - 1].to;
         let altLoaded = false;
         altWrap.addEventListener("toggle", async () => {
           altSummary.textContent = altWrap.open ? "↩ Hide alternate" : "↪ Missed connection?";
@@ -538,6 +539,24 @@ function renderTripPlans(options) {
               altContent.appendChild(sep);
               altContent.appendChild(trainEl);
               altContent.appendChild(badge);
+              // Show arrival at final destination
+              try {
+                const altRoute = await fetchTrainRoute(next.train_id);
+                const destStop = altRoute.find((s) => String(s.station_id || "").toUpperCase() === destStationID);
+                if (destStop) {
+                  const arrTime = formatWIBTime(destStop.departs_at || destStop.arrives_at);
+                  const sep2 = document.createElement("span");
+                  sep2.className = "mx-1.5 text-slate-300";
+                  sep2.textContent = "·";
+                  const arrEl = document.createElement("span");
+                  arrEl.className = "text-slate-500";
+                  arrEl.textContent = `arr ${stationNameOnly(destStationID)} ${arrTime}`;
+                  altContent.appendChild(sep2);
+                  altContent.appendChild(arrEl);
+                }
+              } catch (_) {
+                // Arrival lookup failed — still show departure info
+              }
             } else {
               altContent.textContent = "No alternate train found in schedule.";
             }
