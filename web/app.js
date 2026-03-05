@@ -7,6 +7,7 @@ const API_BASE = "/v1";
 
 const pickerView = document.getElementById("picker-view");
 const scheduleView = document.getElementById("schedule-view");
+const pickerStatusNode = document.getElementById("picker-status");
 const stationSearch = document.getElementById("station-search");
 const stationList = document.getElementById("station-list");
 const saveButton = document.getElementById("save-stations");
@@ -91,6 +92,11 @@ function showStatus(message, isError = false) {
   statusNode.classList.toggle("error", isError);
 }
 
+function showPickerStatus(message, isError = false) {
+  pickerStatusNode.textContent = message;
+  pickerStatusNode.classList.toggle("error", isError);
+}
+
 async function fetchWithTimeout(url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -132,6 +138,12 @@ function updateSelectionCount() {
 }
 
 function renderStationPicker() {
+  if (stations.length === 0) {
+    stationList.innerHTML = '<p class="hint">No station data available yet. Run station sync first.</p>';
+    saveButton.disabled = true;
+    return;
+  }
+
   const q = stationSearch.value.trim().toLowerCase();
   stationList.innerHTML = "";
 
@@ -282,7 +294,7 @@ async function init() {
     await loadStations();
   } catch (_) {
     setView("picker");
-    showStatus("Failed to load station list. Reload to retry.", true);
+    showPickerStatus("Failed to load station list. Reload to retry.", true);
     return;
   }
 
@@ -310,6 +322,11 @@ async function init() {
 
   renderStationPicker();
   updateSelectionCount();
+  if (stations.length === 0) {
+    showPickerStatus("No station data available yet. Run sync, then refresh this page.", true);
+  } else {
+    showPickerStatus("");
+  }
 
   if (preferredStations.length === 0) {
     setView("picker");
