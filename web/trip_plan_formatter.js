@@ -67,6 +67,40 @@
     return Number.isNaN(value.getTime()) ? null : value;
   }
 
+  function projectTimeToBoardedDate(value, boardedAt) {
+    if (!(value instanceof Date) || Number.isNaN(value.getTime()) || !(boardedAt instanceof Date) || Number.isNaN(boardedAt.getTime())) {
+      return null;
+    }
+    return new Date(Date.UTC(
+      boardedAt.getUTCFullYear(),
+      boardedAt.getUTCMonth(),
+      boardedAt.getUTCDate(),
+      value.getUTCHours(),
+      value.getUTCMinutes(),
+      value.getUTCSeconds(),
+      value.getUTCMilliseconds(),
+    ));
+  }
+
+  function projectStopToBoardedDate(stop, boardedAt) {
+    if (!stop) {
+      return null;
+    }
+
+    const projected = { ...stop };
+    const departsAt = parseStopTime(stop);
+    if (departsAt) {
+      projected.departs_at = projectTimeToBoardedDate(departsAt, boardedAt)?.toISOString() || stop.departs_at;
+    }
+    if (stop.arrives_at) {
+      const arrivesAt = new Date(stop.arrives_at);
+      if (!Number.isNaN(arrivesAt.getTime())) {
+        projected.arrives_at = projectTimeToBoardedDate(arrivesAt, boardedAt)?.toISOString() || stop.arrives_at;
+      }
+    }
+    return projected;
+  }
+
   function findArrivalStopAfterDeparture(route, destStationID, boardedDepartureAt) {
     if (!Array.isArray(route) || !destStationID || !boardedDepartureAt) {
       return null;
@@ -84,12 +118,13 @@
       if (String(stop.station_id || "").toUpperCase() !== destination) {
         continue;
       }
-      const stopTime = parseStopTime(stop);
+      const projectedStop = projectStopToBoardedDate(stop, boardedAt);
+      const stopTime = parseStopTime(projectedStop);
       if (!stopTime || stopTime <= boardedAt) {
         continue;
       }
       if (!bestTime || stopTime < bestTime) {
-        bestStop = stop;
+        bestStop = projectedStop;
         bestTime = stopTime;
       }
     }

@@ -176,5 +176,23 @@ test("findArrivalStopAfterDeparture returns only a destination stop after boarde
   );
 
   assert.ok(beforeBoarding);
-  assert.equal(beforeBoarding.departs_at, "2026-03-06T11:58:00+07:00");
+  assert.equal(new Date(beforeBoarding.departs_at).toISOString(), "2026-03-06T04:58:00.000Z");
+});
+
+test("findArrivalStopAfterDeparture projects snapshot route times onto the boarded date", () => {
+  const route = [
+    { station_id: "DU", departs_at: "2026-03-05T07:16:00Z" },
+    { station_id: "THB", departs_at: "2026-03-05T07:23:00Z" },
+    { station_id: "SUDB", departs_at: "2026-03-05T07:26:30Z" },
+  ];
+
+  const stop = findArrivalStopAfterDeparture(
+    route,
+    "SUDB",
+    new Date("2026-03-06T14:09:00+07:00"),
+  );
+
+  assert.ok(stop);
+  assert.equal(stop.station_id, "SUDB");
+  assert.equal(new Date(stop.departs_at).toISOString(), "2026-03-06T07:26:30.000Z");
 });
