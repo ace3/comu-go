@@ -146,14 +146,31 @@ Plan Trip / Preferred Stations
 Alerts / Settings / Help
 ```
 
+The button-led flow is the default UX:
+
+- `Morning` / `Evening` uses your saved route and shows commute options immediately
+- `Plan Trip` opens a guided planner flow in Telegram and can hand off to `/app`
+- `Preferred Stations` starts manual planning from your saved route endpoints
+- `Alerts`, `Settings`, and `Help` open inline action menus without losing slash-command support
+
 ### Checking schedules
 
 ```
-/go_morning     — trains from home → away around your morning time (± 1 hr) + weather
-/go_evening     — trains from away → home around your evening time (± 1 hr) + weather
+/go_morning     — route options from home → away around your morning time (± 1 hr) + weather
+/go_evening     — route options from away → home around your evening time (± 1 hr) + weather
 ```
 
 Requires `/set_route` to be configured first.
+
+When no direct train exists, the bot uses the same planner engine as `/app` and returns transfer options with:
+
+- direct/transit label
+- total duration
+- leg-by-leg train and line details
+- departure/arrival times per leg
+- transfer wait details
+
+If `APP_BASE_URL` is configured, the result can also include an `Open /app` button for the full planner.
 
 ```
 /schedule                   — interactive: bot asks origin, destination, time
@@ -171,7 +188,7 @@ Bot:  To which station?
 You:  Jakarta Kota
 Bot:  What time? (HH:MM or 'now')
 You:  now
-Bot:  🚆 Trains Rawa Buaya → Jakarta Kota (08:15–10:15): ...
+Bot:  🚆 Route options Rawa Buaya → Jakarta Kota ...
 ```
 
 Time formats accepted: `HH:MM`, `now`, `today HH:MM`, `tomorrow HH:MM`
@@ -196,7 +213,8 @@ Time formats accepted: `HH:MM`, `now`, `today HH:MM`, `tomorrow HH:MM`
 
 ### Notes
 
-- Station codes work as search queries (e.g. `BW`, `JAKK`, `DP`)
+- Station codes work as search queries (e.g. `BW`, `JAKK`, `DP`, `SUD`, `SUDB`)
+- If a station name is ambiguous, reply with the exact station name or the station code shown by the bot
 - Weather is fetched from Open-Meteo using station coordinates (free, no API key needed)
 - One-time alerts are stored in Redis and delivered within ~1 minute of the scheduled time
 - Daily push notifications fire at 06:45 (morning) and 17:15 (evening) WIB on your configured work days
