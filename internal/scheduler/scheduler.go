@@ -13,6 +13,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	checkExpiryFunc = tokenrefresh.CheckExpiry
+	tryRefreshFunc  = tokenrefresh.TryRefresh
+)
+
 // Start launches a background goroutine that runs a full sync every day at
 // 00:10 WIB (Asia/Jakarta). It stops cleanly when ctx is cancelled.
 func Start(ctx context.Context, cfg *config.Config, db *gorm.DB, c *cache.Cache) {
@@ -89,11 +94,8 @@ func run(ctx context.Context, cfg *config.Config, db *gorm.DB, c *cache.Cache) {
 // refreshToken checks token expiry and attempts to auto-rotate from the KCI page.
 // All failures are logged as warnings — they never abort the sync.
 func refreshToken(ctx context.Context, cfg *config.Config) {
-	// 1. Warn admin if current token expires within 4 days.
-	tokenrefresh.CheckExpiry(ctx, cfg.Token(), cfg.TelegramToken, cfg.AdminTelegramID, 4*24*time.Hour)
-
-	// 2. Try to fetch a fresher token from the KCI page.
-	rotated, err := tokenrefresh.TryRefresh(
+	// 1. Try to fetch a fresher token from the KCI page.
+	rotated, err := tryRefreshFunc(
 		ctx,
 		cfg.Token(),
 		cfg.RotateToken,
@@ -107,6 +109,9 @@ func refreshToken(ctx context.Context, cfg *config.Config) {
 	if rotated {
 		slog.Info("token auto-refreshed from KCI page")
 	}
+
+	// 2. Warn admin if the effective token still expires within 4 days.
+	checkExpiryFunc(ctx, cfg.Token(), cfg.TelegramToken, cfg.AdminTelegramID, 4*24*time.Hour)
 }
 
 // nextRunTime returns the next 00:10 WIB timestamp after now.

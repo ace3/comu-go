@@ -112,6 +112,27 @@ func TestFetchFromKCI_NoToken(t *testing.T) {
 	}
 }
 
+func TestExtractTokenFromPage_SkipsCommentedTokenLines(t *testing.T) {
+	stale := makeToken(time.Now().Add(-365 * 24 * time.Hour).Unix())
+	fresh := makeToken(time.Now().Add(365 * 24 * time.Hour).Unix())
+	body := []byte(fmt.Sprintf(`<html><body><script>
+// xhr.setRequestHeader('Authorization',
+//     'Bearer %s'
+// );
+xhr.setRequestHeader('Authorization',
+    'Bearer %s'
+);
+</script></body></html>`, stale, fresh))
+
+	got, err := extractTokenFromPage(body)
+	if err != nil {
+		t.Fatalf("extractTokenFromPage error: %v", err)
+	}
+	if got != fresh {
+		t.Fatalf("token = %q, want %q", got, fresh)
+	}
+}
+
 // ---- TryRefresh ----
 
 func TestTryRefresh_TokenUnchanged(t *testing.T) {

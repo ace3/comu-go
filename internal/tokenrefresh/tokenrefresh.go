@@ -3,6 +3,7 @@
 package tokenrefresh
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -48,12 +49,27 @@ func FetchFromKCI(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("tokenrefresh: read body: %w", err)
 	}
 
-	m := tokenRegex.FindSubmatch(body)
-	if len(m) < 2 {
-		return "", fmt.Errorf("tokenrefresh: Bearer token not found in KCI page — page structure may have changed")
+	return extractTokenFromPage(body)
+}
+
+func extractTokenFromPage(body []byte) (string, error) {
+	scanner := bufio.NewScanner(bytes.NewReader(body))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if bytes.Contains(line, []byte("//")) {
+			continue
+		}
+
+		m := tokenRegex.FindSubmatch(line)
+		if len(m) >= 2 {
+			return string(m[1]), nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("tokenrefresh: scan page: %w", err)
 	}
 
-	return string(m[1]), nil
+	return "", fmt.Errorf("tokenrefresh: Bearer token not found in KCI page — page structure may have changed")
 }
 
 // TryRefresh fetches the latest token from KCI and, if it differs from the
