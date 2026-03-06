@@ -235,8 +235,19 @@ func TestSendScheduleWithWeatherRawFallsBackToTripPlan(t *testing.T) {
 	if strings.Contains(msg.Text, "No trains found") {
 		t.Fatalf("expected planner fallback instead of no-trains text, got %q", msg.Text)
 	}
-	if !strings.Contains(msg.Text, "A1") || !strings.Contains(msg.Text, "C1") {
-		t.Fatalf("expected transfer plan with A1 and C1, got %q", msg.Text)
+	for _, want := range []string{
+		"*Option 1*",
+		"1 Transit",
+		"Duration 73 min",
+		"A1 | Commuter Line Tangerang | Rawa Buaya → Duri",
+		"Rawa Buaya dep 15:52 • Duri arr 16:08",
+		"Transit at Duri • arrive 16:08 • depart 16:17 • wait 9 min",
+		"C1 | Commuter Line Cikarang | Duri → Sudirman Baru",
+		"Duri dep 16:17 • Sudirman Baru arr 17:05",
+	} {
+		if !strings.Contains(msg.Text, want) {
+			t.Fatalf("expected detailed trip plan output to contain %q, got %q", want, msg.Text)
+		}
 	}
 }
 

@@ -46,9 +46,10 @@ type telegramClient interface {
 type botTripPlanResponse struct {
 	Data struct {
 		Options []struct {
-			DepartAt string `json:"departAt"`
-			ArriveAt string `json:"arriveAt"`
-			Legs     []struct {
+			DurationMinutes int    `json:"durationMinutes"`
+			DepartAt        string `json:"departAt"`
+			ArriveAt        string `json:"arriveAt"`
+			Legs            []struct {
 				TrainID  string `json:"trainId"`
 				Line     string `json:"line"`
 				From     string `json:"from"`
@@ -819,26 +820,62 @@ func (b *Bot) buildTripPlanSummary(ctx context.Context, origin, dest *stationInf
 		if departErr != nil || arriveErr != nil {
 			continue
 		}
-		if len(legs) == 1 {
-			sb.WriteString(fmt.Sprintf("• %s → %s %s\n",
-				departAt.In(loc).Format("15:04"),
-				arriveAt.In(loc).Format("15:04"),
-				escapeMarkdown(legs[0].TrainID)))
-			continue
+		durationMinutes := option.DurationMinutes
+		if durationMinutes <= 0 {
+			durationMinutes = tripPlanDiffMinutes(departAt, arriveAt)
+		}
+		transitCount := max(0, len(legs)-1)
+		mode := "Direct"
+		if transitCount > 0 {
+			mode = fmt.Sprintf("%d Transit", transitCount)
 		}
 
-		first := legs[0]
-		last := legs[len(legs)-1]
-		transferAt := ""
-		if len(legs) > 1 {
-			transferAt = b.stationNameOrCode(ctx, legs[0].To)
+		sb.WriteString(fmt.Sprintf("\n*Option %d* · %s · Duration %d min\n", i+1, mode, durationMinutes))
+		sb.WriteString(fmt.Sprintf("%s → %s\n", departAt.In(loc).Format("15:04"), arriveAt.In(loc).Format("15:04")))
+
+		for idx, leg := range legs {
+			legDepartAt, legDepartErr := time.Parse(time.RFC3339, leg.DepartAt)
+			legArriveAt, legArriveErr := time.Parse(time.RFC3339, leg.ArriveAt)
+			if legDepartErr != nil || legArriveErr != nil {
+				continue
+			}
+
+			fromName := b.stationNameOrCode(ctx, leg.From)
+			toName := b.stationNameOrCode(ctx, leg.To)
+			sb.WriteString(fmt.Sprintf("%s | %s | %s → %s\n",
+				escapeMarkdown(leg.TrainID),
+				escapeMarkdown(leg.Line),
+				escapeMarkdown(fromName),
+				escapeMarkdown(toName),
+			))
+			sb.WriteString(fmt.Sprintf("%s dep %s • %s arr %s\n",
+				escapeMarkdown(fromName),
+				legDepartAt.In(loc).Format("15:04"),
+				escapeMarkdown(toName),
+				legArriveAt.In(loc).Format("15:04"),
+			))
+
+			if idx < len(legs)-1 {
+				nextLeg := legs[idx+1]
+				nextDepartAt, nextErr := time.Parse(time.RFC3339, nextLeg.DepartAt)
+				if nextErr != nil {
+					continue
+				}
+				waitMin := tripPlanDiffMinutes(legArriveAt, nextDepartAt)
+				waitClass := classifyTripPlanTransferWait(waitMin)
+				waitSuffix := ""
+				if waitClass != "" {
+					waitSuffix = fmt.Sprintf(" (%s)", waitClass)
+				}
+				sb.WriteString(fmt.Sprintf("Transit at %s • arrive %s • depart %s • wait %d min%s\n",
+					escapeMarkdown(toName),
+					legArriveAt.In(loc).Format("15:04"),
+					nextDepartAt.In(loc).Format("15:04"),
+					waitMin,
+					waitSuffix,
+				))
+			}
 		}
-		sb.WriteString(fmt.Sprintf("• %s → %s %s → %s via %s\n",
-			departAt.In(loc).Format("15:04"),
-			arriveAt.In(loc).Format("15:04"),
-			escapeMarkdown(first.TrainID),
-			escapeMarkdown(last.TrainID),
-			escapeMarkdown(transferAt)))
 	}
 
 	if sb.Len() == 0 {
@@ -848,6 +885,20 @@ func (b *Bot) buildTripPlanSummary(ctx context.Context, origin, dest *stationInf
 		sb.WriteString("\n_Open /app for the full planner._")
 	}
 	return sb.String(), nil
+}
+
+func tripPlanDiffMinutes(from, to time.Time) int {
+	return max(0, int(to.Sub(from).Minutes()))
+}
+
+func classifyTripPlanTransferWait(waitMin int) string {
+	if waitMin <= 4 {
+		return "tight transfer"
+	}
+	if waitMin >= 25 {
+		return "long wait"
+	}
+	return ""
 }
 
 // ---- DB Helpers ----
