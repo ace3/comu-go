@@ -54,6 +54,7 @@ SYNC_SECRET=<optional secret for POST /sync endpoint>
 
 # Telegram bot (optional — only needed to run the bot)
 TELEGRAM_TOKEN=<your BotFather token>
+APP_BASE_URL=https://your-domain.example.com
 TIMEZONE=Asia/Jakarta
 OPEN_METEO_BASE=https://api.open-meteo.com/v1/forecast
 
@@ -125,6 +126,8 @@ The bot polls Telegram for updates. Make sure `TELEGRAM_TOKEN` is set in `.env`.
 ## Telegram Bot
 
 The bot provides a conversational interface for KRL schedule queries, weather, and commute alerts.
+It now exposes a button-led main menu for common actions while preserving all slash commands.
+Set `APP_BASE_URL` if you want the bot to show an `Open /app` button for the advanced planner.
 
 ### First-time setup
 
@@ -133,6 +136,14 @@ The bot provides a conversational interface for KRL schedule queries, weather, a
 /set_route      — set your home & away stations + departure times
 /set_schedule   — choose your work days (e.g. mon,tue,wed,thu,fri)
 /toggle_notifs  — enable daily push notifications on work days
+```
+
+Main menu buttons cover:
+
+```
+Morning / Evening
+Plan Trip / Preferred Stations
+Alerts / Settings / Help
 ```
 
 ### Checking schedules

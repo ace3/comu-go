@@ -406,3 +406,185 @@ func (m *Messages) WorkScheduleSet(days []string) string {
 	}
 	return fmt.Sprintf("✅ Work days saved: %s", d)
 }
+
+func (m *Messages) MenuMorning() string {
+	if m.isID() {
+		return "Pagi"
+	}
+	return "Morning"
+}
+
+func (m *Messages) MenuEvening() string {
+	if m.isID() {
+		return "Sore"
+	}
+	return "Evening"
+}
+
+func (m *Messages) MenuPlanTrip() string {
+	if m.isID() {
+		return "Rencana Trip"
+	}
+	return "Plan Trip"
+}
+
+func (m *Messages) MenuPreferredStations() string {
+	if m.isID() {
+		return "Stasiun Favorit"
+	}
+	return "Preferred Stations"
+}
+
+func (m *Messages) MenuAlerts() string {
+	if m.isID() {
+		return "Alerts"
+	}
+	return "Alerts"
+}
+
+func (m *Messages) MenuSettings() string {
+	if m.isID() {
+		return "Pengaturan"
+	}
+	return "Settings"
+}
+
+func (m *Messages) MenuHelp() string {
+	if m.isID() {
+		return "Bantuan"
+	}
+	return "Help"
+}
+
+func (m *Messages) MenuOpenApp() string {
+	if m.isID() {
+		return "Buka /app"
+	}
+	return "Open /app"
+}
+
+func (m *Messages) MenuBack() string {
+	if m.isID() {
+		return "Kembali"
+	}
+	return "Back"
+}
+
+func (m *Messages) MenuRefresh() string {
+	if m.isID() {
+		return "Refresh"
+	}
+	return "Refresh"
+}
+
+func (m *Messages) MenuCreateAlert() string {
+	if m.isID() {
+		return "Buat Alert"
+	}
+	return "Create Alert"
+}
+
+func (m *Messages) MenuListAlerts() string {
+	if m.isID() {
+		return "Daftar Alert"
+	}
+	return "List Alerts"
+}
+
+func (m *Messages) MenuSetRoute() string {
+	if m.isID() {
+		return "Atur Rute"
+	}
+	return "Set Route"
+}
+
+func (m *Messages) MenuWorkDays() string {
+	if m.isID() {
+		return "Hari Kerja"
+	}
+	return "Work Days"
+}
+
+func (m *Messages) MenuToggleNotifications() string {
+	if m.isID() {
+		return "Toggle Notif"
+	}
+	return "Toggle Notifs"
+}
+
+func (m *Messages) MenuLanguage() string {
+	if m.isID() {
+		return "Bahasa"
+	}
+	return "Language"
+}
+
+func (m *Messages) MenuHomeToAway() string {
+	if m.isID() {
+		return "Rumah -> Tujuan"
+	}
+	return "Home -> Away"
+}
+
+func (m *Messages) MenuAwayToHome() string {
+	if m.isID() {
+		return "Tujuan -> Rumah"
+	}
+	return "Away -> Home"
+}
+
+func (m *Messages) MenuNavigationHint() string {
+	if m.isID() {
+		return "Pilih aksi cepat dari tombol di bawah."
+	}
+	return "Use the buttons below for quick actions."
+}
+
+func (m *Messages) PlanTripPrompt() string {
+	if m.isID() {
+		return "Pilih stasiun asal untuk trip sederhana, atau buka /app untuk planner lengkap."
+	}
+	return "Choose an origin for a quick trip search, or open /app for the full planner."
+}
+
+func (m *Messages) PreferredStationsPrompt() string {
+	if m.isID() {
+		return "Gunakan stasiun tersimpan sebagai titik awal cepat."
+	}
+	return "Use your saved stations as quick starting points."
+}
+
+func (m *Messages) AlertsPrompt() string {
+	if m.isID() {
+		return "Kelola alert satu kali dari menu ini."
+	}
+	return "Manage your one-time alerts from this menu."
+}
+
+func (m *Messages) SettingsPrompt() string {
+	if m.isID() {
+		return "Ubah rute, hari kerja, notifikasi, atau bahasa."
+	}
+	return "Update your route, work days, notifications, or language."
+}
+
+func (m *Messages) CommuteActionsPrompt() string {
+	if m.isID() {
+		return "Aksi perjalanan cepat:"
+	}
+	return "Quick commute actions:"
+}
+
+func (m *Messages) ButtonActionExpired() string {
+	if m.isID() {
+		return "Tombol ini sudah kadaluarsa. Buka menu lagi."
+	}
+	return "This button has expired. Open the menu again."
+}
+
+func (m *Messages) AppLinkUnavailable() string {
+	if m.isID() {
+		return "Link /app belum dikonfigurasi."
+	}
+	return "The /app link is not configured yet."
+}

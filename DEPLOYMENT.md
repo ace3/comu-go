@@ -28,6 +28,7 @@ All deployment methods rely on the same set of environment variables.
 | `PORT` | — | `8080` | HTTP port for the API server |
 | `SYNC_SECRET` | — | — | Secret for `POST /sync` endpoint. Omit to disable auth. |
 | `TELEGRAM_TOKEN` | ✅ (bot only) | — | BotFather token for the Telegram bot |
+| `APP_BASE_URL` | — | — | Public base URL used by the Telegram bot for the `Open /app` button |
 | `OPEN_METEO_BASE` | — | `https://api.open-meteo.com/v1/forecast` | Weather API base URL |
 | `TIMEZONE` | — | `Asia/Jakarta` | Timezone for the bot (WIB) |
 | `AUTO_SYNC` | — | `false` | Set to `true` to auto-sync data daily at 00:10 WIB |

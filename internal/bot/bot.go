@@ -24,12 +24,18 @@ import (
 // Bot is the main Telegram bot handler.
 type Bot struct {
 	api      *tgbotapi.BotAPI
+	client   telegramClient
 	db       *gorm.DB
 	rc       *redis.Client
 	sessions *session.Store
 	weather  *weather.Client
 	cfg      *config.Config
 	loc      *time.Location
+}
+
+type telegramClient interface {
+	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
+	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 }
 
 // New creates a new Bot instance.
@@ -44,17 +50,36 @@ func New(cfg *config.Config, db *gorm.DB, rc *redis.Client) (*Bot, error) {
 	}
 	return &Bot{
 		api:      api,
+		client:   api,
 		db:       db,
 		rc:       rc,
 		sessions: session.New(rc),
 		weather:  weather.New(cfg.OpenMeteoBase),
 		cfg:      cfg,
 		loc:      loc,
-	}, nil
+	}, registerBotCommands(api)
 }
 
 // API returns the underlying Telegram bot API.
 func (b *Bot) API() *tgbotapi.BotAPI { return b.api }
+
+func registerBotCommands(api *tgbotapi.BotAPI) error {
+	commands := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{Command: "start", Description: "Open the main commuter menu"},
+		tgbotapi.BotCommand{Command: "go_morning", Description: "Home to away schedule"},
+		tgbotapi.BotCommand{Command: "go_evening", Description: "Away to home schedule"},
+		tgbotapi.BotCommand{Command: "schedule", Description: "Manual station-to-station schedule"},
+		tgbotapi.BotCommand{Command: "schedule_once", Description: "Create a one-time alert"},
+		tgbotapi.BotCommand{Command: "list_alerts", Description: "List scheduled alerts"},
+		tgbotapi.BotCommand{Command: "settings", Description: "View your saved profile"},
+		tgbotapi.BotCommand{Command: "help", Description: "Show all commands"},
+	)
+	_, err := api.Request(commands)
+	if err != nil {
+		return fmt.Errorf("bot: register commands: %w", err)
+	}
+	return nil
+}
 
 // Run starts the bot polling loop. It stops when ctx is cancelled.
 func (b *Bot) Run(ctx context.Context) {
@@ -81,6 +106,18 @@ func (b *Bot) Run(ctx context.Context) {
 
 // handleUpdate routes a single Telegram update.
 func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
+	if update.CallbackQuery != nil {
+		query := update.CallbackQuery
+		user, err := b.getOrCreateUser(ctx, query.From.ID, query.From.FirstName)
+		if err != nil {
+			slog.Error("failed to get/create user for callback", "error", err)
+			return
+		}
+		msgs := i18n.New(user.Lang)
+		b.handleCallbackQuery(ctx, query, user, msgs)
+		return
+	}
+
 	if update.Message == nil {
 		return
 	}
@@ -115,8 +152,12 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
+	if b.handleMenuText(ctx, msg, user, msgs) {
+		return
+	}
+
 	// Unknown free-form text - show help.
-	b.send(msg.Chat.ID, msgs.Help())
+	b.showMainMenu(ctx, msg.Chat.ID, msgs, msgs.Help())
 }
 
 // handleCommand routes a slash command.
@@ -124,9 +165,9 @@ func (b *Bot) handleCommand(ctx context.Context, msg *tgbotapi.Message, user *mo
 	cmd := msg.Command()
 	switch cmd {
 	case "start":
-		b.send(msg.Chat.ID, msgs.Welcome(msg.From.FirstName))
+		b.showMainMenu(ctx, msg.Chat.ID, msgs, msgs.Welcome(msg.From.FirstName))
 	case "help":
-		b.send(msg.Chat.ID, msgs.Help())
+		b.showMainMenu(ctx, msg.Chat.ID, msgs, msgs.Help())
 	case "set_route":
 		b.startSetRoute(ctx, msg, msgs)
 	case "set_schedule":
@@ -159,23 +200,35 @@ func (b *Bot) handleCommand(ctx context.Context, msg *tgbotapi.Message, user *mo
 // ---- Command Implementations ----
 
 func (b *Bot) startSetRoute(ctx context.Context, msg *tgbotapi.Message, msgs *i18n.Messages) {
-	_ = b.sessions.Set(ctx, msg.From.ID, &session.State{
-		Command: "set_route",
-		Step:    1,
-		Data:    map[string]string{},
-	})
-	b.sendMarkdown(msg.Chat.ID, msgs.AskHomeStation())
+	b.startSetRouteForUser(ctx, msg.From.ID, msg.Chat.ID, msgs)
+}
+
+func (b *Bot) startSetRouteForUser(ctx context.Context, userID, chatID int64, msgs *i18n.Messages) {
+	if b.sessions != nil {
+		_ = b.sessions.Set(ctx, userID, &session.State{
+			Command: "set_route",
+			Step:    1,
+			Data:    map[string]string{},
+		})
+	}
+	b.sendMarkdown(chatID, msgs.AskHomeStation())
 }
 
 func (b *Bot) startSetSchedule(ctx context.Context, msg *tgbotapi.Message, user *models.BotUser, msgs *i18n.Messages) {
+	b.startSetScheduleForUser(ctx, msg.From.ID, msg.Chat.ID, user, msgs)
+}
+
+func (b *Bot) startSetScheduleForUser(ctx context.Context, userID, chatID int64, user *models.BotUser, msgs *i18n.Messages) {
 	var days []string
 	_ = json.Unmarshal(user.WorkDays, &days)
-	_ = b.sessions.Set(ctx, msg.From.ID, &session.State{
-		Command: "set_schedule",
-		Step:    1,
-		Data:    map[string]string{},
-	})
-	b.sendMarkdown(msg.Chat.ID, msgs.WorkSchedulePrompt(days))
+	if b.sessions != nil {
+		_ = b.sessions.Set(ctx, userID, &session.State{
+			Command: "set_schedule",
+			Step:    1,
+			Data:    map[string]string{},
+		})
+	}
+	b.sendMarkdown(chatID, msgs.WorkSchedulePrompt(days))
 }
 
 func (b *Bot) handleToggleNotifs(ctx context.Context, msg *tgbotapi.Message, user *models.BotUser, msgs *i18n.Messages) {
@@ -200,6 +253,7 @@ func (b *Bot) handleGoMorning(ctx context.Context, msg *tgbotapi.Message, user *
 	loc := b.loc
 	now := time.Now().In(loc)
 	b.sendScheduleWithWeather(ctx, msg.Chat.ID, home, away, now, msgs)
+	b.showCommuteActions(ctx, msg.Chat.ID, user.TelegramID, "morning", msgs)
 }
 
 func (b *Bot) handleGoEvening(ctx context.Context, msg *tgbotapi.Message, user *models.BotUser, msgs *i18n.Messages) {
@@ -211,31 +265,45 @@ func (b *Bot) handleGoEvening(ctx context.Context, msg *tgbotapi.Message, user *
 	loc := b.loc
 	now := time.Now().In(loc)
 	b.sendScheduleWithWeather(ctx, msg.Chat.ID, away, home, now, msgs)
+	b.showCommuteActions(ctx, msg.Chat.ID, user.TelegramID, "evening", msgs)
 }
 
 func (b *Bot) startSchedule(ctx context.Context, msg *tgbotapi.Message, msgs *i18n.Messages) {
+	b.startScheduleForUser(ctx, msg.From.ID, msg.Chat.ID, strings.TrimSpace(msg.CommandArguments()), msgs)
+}
+
+func (b *Bot) startScheduleForUser(ctx context.Context, userID, chatID int64, inlineOrigin string, msgs *i18n.Messages) {
 	st := &session.State{
 		Command: "schedule",
 		Step:    1,
 		Data:    map[string]string{},
 	}
-	_ = b.sessions.Set(ctx, msg.From.ID, st)
+	if b.sessions != nil {
+		_ = b.sessions.Set(ctx, userID, st)
+	}
 
 	// If origin was passed inline (e.g. /schedule rawa buaya), skip step 1.
-	if arg := strings.TrimSpace(msg.CommandArguments()); arg != "" {
-		b.handleScheduleStep(ctx, msg, nil, msgs, st, arg)
+	if inlineOrigin != "" {
+		msg := &tgbotapi.Message{Chat: &tgbotapi.Chat{ID: chatID}, From: &tgbotapi.User{ID: userID}}
+		b.handleScheduleStep(ctx, msg, nil, msgs, st, inlineOrigin)
 		return
 	}
-	b.sendMarkdown(msg.Chat.ID, msgs.AskScheduleOrigin())
+	b.sendMarkdown(chatID, msgs.AskScheduleOrigin())
 }
 
 func (b *Bot) startScheduleOnce(ctx context.Context, msg *tgbotapi.Message, msgs *i18n.Messages) {
-	_ = b.sessions.Set(ctx, msg.From.ID, &session.State{
-		Command: "schedule_once",
-		Step:    1,
-		Data:    map[string]string{},
-	})
-	b.sendMarkdown(msg.Chat.ID, msgs.AskAlertOrigin())
+	b.startScheduleOnceForUser(ctx, msg.From.ID, msg.Chat.ID, msgs)
+}
+
+func (b *Bot) startScheduleOnceForUser(ctx context.Context, userID, chatID int64, msgs *i18n.Messages) {
+	if b.sessions != nil {
+		_ = b.sessions.Set(ctx, userID, &session.State{
+			Command: "schedule_once",
+			Step:    1,
+			Data:    map[string]string{},
+		})
+	}
+	b.sendMarkdown(chatID, msgs.AskAlertOrigin())
 }
 
 func (b *Bot) handleListAlerts(ctx context.Context, msg *tgbotapi.Message, user *models.BotUser, msgs *i18n.Messages) {
@@ -708,7 +776,7 @@ func (b *Bot) getSchedulesBetween(ctx context.Context, originCode, destCode stri
 
 func (b *Bot) send(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
-	if _, err := b.api.Send(msg); err != nil {
+	if _, err := b.client.Send(msg); err != nil {
 		slog.Error("telegram send error", "error", err)
 	}
 }
@@ -716,9 +784,37 @@ func (b *Bot) send(chatID int64, text string) {
 func (b *Bot) sendMarkdown(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	if _, err := b.api.Send(msg); err != nil {
+	if _, err := b.client.Send(msg); err != nil {
 		slog.Error("telegram send markdown error", "error", err, "text_len", len(text))
 	}
+}
+
+func (b *Bot) sendMarkdownWithMarkup(chatID int64, text string, markup interface{}) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	switch typed := markup.(type) {
+	case tgbotapi.ReplyKeyboardMarkup:
+		msg.ReplyMarkup = typed
+	case tgbotapi.InlineKeyboardMarkup:
+		msg.ReplyMarkup = typed
+	}
+	if _, err := b.client.Send(msg); err != nil {
+		slog.Error("telegram send with markup error", "error", err, "text_len", len(text))
+	}
+}
+
+func (b *Bot) editOrSendMarkdown(chatID int64, callback *tgbotapi.CallbackQuery, text string, markup tgbotapi.InlineKeyboardMarkup) {
+	if callback == nil || callback.Message == nil {
+		b.sendMarkdownWithMarkup(chatID, text, markup)
+		return
+	}
+
+	edit := tgbotapi.NewEditMessageTextAndMarkup(chatID, callback.Message.MessageID, text, markup)
+	edit.ParseMode = tgbotapi.ModeMarkdown
+	if _, err := b.client.Request(edit); err == nil {
+		return
+	}
+	b.sendMarkdownWithMarkup(chatID, text, markup)
 }
 
 // SendMessage is a public helper for the alert dispatcher to deliver messages.

@@ -40,6 +40,7 @@ func TestLoad_CustomValues(t *testing.T) {
 	os.Setenv("REDIS_URL", "redis://test")
 	os.Setenv("KAI_AUTH_TOKEN", "test-token")
 	os.Setenv("SYNC_SECRET", "my-secret")
+	os.Setenv("APP_BASE_URL", "https://comu.example.com")
 	os.Setenv("SKIPPED_STATIONS", "MRI, JAKK ,, BOO")
 	os.Setenv("ON_DEMAND_SYNC_ENABLED", "0")
 	os.Setenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES", "45")
@@ -50,6 +51,7 @@ func TestLoad_CustomValues(t *testing.T) {
 		os.Unsetenv("REDIS_URL")
 		os.Unsetenv("KAI_AUTH_TOKEN")
 		os.Unsetenv("SYNC_SECRET")
+		os.Unsetenv("APP_BASE_URL")
 		os.Unsetenv("SKIPPED_STATIONS")
 		os.Unsetenv("ON_DEMAND_SYNC_ENABLED")
 		os.Unsetenv("ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES")
@@ -69,6 +71,9 @@ func TestLoad_CustomValues(t *testing.T) {
 	if cfg.SyncSecret != "my-secret" {
 		t.Errorf("expected SYNC_SECRET my-secret, got %s", cfg.SyncSecret)
 	}
+	if cfg.AppBaseURL != "https://comu.example.com" {
+		t.Errorf("expected APP_BASE_URL to load, got %q", cfg.AppBaseURL)
+	}
 	if got, want := strings.Join(cfg.SkippedStations, ","), "MRI,JAKK,BOO"; got != want {
 		t.Errorf("expected parsed skipped stations %q, got %q", want, got)
 	}
@@ -77,6 +82,28 @@ func TestLoad_CustomValues(t *testing.T) {
 	}
 	if cfg.OnDemandSyncMinIntervalMinutes != 45 {
 		t.Errorf("expected ON_DEMAND_SYNC_MIN_INTERVAL_MINUTES 45, got %d", cfg.OnDemandSyncMinIntervalMinutes)
+	}
+}
+
+func TestAppURL(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{name: "empty", base: "", want: ""},
+		{name: "root base", base: "https://comu.example.com", want: "https://comu.example.com/app"},
+		{name: "app path", base: "https://comu.example.com/app", want: "https://comu.example.com/app"},
+		{name: "trailing slash", base: "https://comu.example.com/", want: "https://comu.example.com/app"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{AppBaseURL: tt.base}
+			if got := cfg.AppURL(); got != tt.want {
+				t.Fatalf("AppURL() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

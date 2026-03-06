@@ -12,20 +12,21 @@ import (
 )
 
 type Config struct {
-	DatabaseURL     string
-	RedisURL        string
-	Port            string
-	Env             string
-	KAIAuthToken    string // initial value loaded from env; use Token() at runtime
-	SyncSecret      string
-	SkippedStations []string
+	DatabaseURL                    string
+	RedisURL                       string
+	Port                           string
+	Env                            string
+	AppBaseURL                     string
+	KAIAuthToken                   string // initial value loaded from env; use Token() at runtime
+	SyncSecret                     string
+	SkippedStations                []string
 	OnDemandSyncEnabled            bool
 	OnDemandSyncMinIntervalMinutes int
-	TelegramToken   string
-	OpenMeteoBase   string
-	Timezone        string
-	AutoSync        bool
-	AdminTelegramID int64 // Telegram user ID to notify on token events
+	TelegramToken                  string
+	OpenMeteoBase                  string
+	Timezone                       string
+	AutoSync                       bool
+	AdminTelegramID                int64 // Telegram user ID to notify on token events
 
 	liveToken atomic.Pointer[string] // hot-reloadable token, set by RotateToken
 }
@@ -90,21 +91,34 @@ func Load() *Config {
 	}
 
 	return &Config{
-		DatabaseURL:     os.Getenv("DATABASE_URL"),
-		RedisURL:        os.Getenv("REDIS_URL"),
-		Port:            port,
-		Env:             env,
-		KAIAuthToken:    os.Getenv("KAI_AUTH_TOKEN"),
-		SyncSecret:      os.Getenv("SYNC_SECRET"),
-		SkippedStations: skippedStations,
+		DatabaseURL:                    os.Getenv("DATABASE_URL"),
+		RedisURL:                       os.Getenv("REDIS_URL"),
+		Port:                           port,
+		Env:                            env,
+		AppBaseURL:                     os.Getenv("APP_BASE_URL"),
+		KAIAuthToken:                   os.Getenv("KAI_AUTH_TOKEN"),
+		SyncSecret:                     os.Getenv("SYNC_SECRET"),
+		SkippedStations:                skippedStations,
 		OnDemandSyncEnabled:            onDemandSyncEnabled == "true" || onDemandSyncEnabled == "1",
 		OnDemandSyncMinIntervalMinutes: onDemandSyncMinIntervalMinutes,
-		TelegramToken:   os.Getenv("TELEGRAM_TOKEN"),
-		OpenMeteoBase:   openMeteoBase,
-		Timezone:        tz,
-		AutoSync:        autoSync == "true" || autoSync == "1",
-		AdminTelegramID: adminID,
+		TelegramToken:                  os.Getenv("TELEGRAM_TOKEN"),
+		OpenMeteoBase:                  openMeteoBase,
+		Timezone:                       tz,
+		AutoSync:                       autoSync == "true" || autoSync == "1",
+		AdminTelegramID:                adminID,
 	}
+}
+
+func (c *Config) AppURL() string {
+	base := strings.TrimSpace(c.AppBaseURL)
+	if base == "" {
+		return ""
+	}
+	base = strings.TrimRight(base, "/")
+	if strings.HasSuffix(strings.ToLower(base), "/app") {
+		return base
+	}
+	return base + "/app"
 }
 
 func parseCSVEnvWithDefault(key string, fallback []string) []string {

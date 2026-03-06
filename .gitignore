@@ -4,3 +4,5 @@
 bin/
 secrets/
 bot
+!internal/bot/
+!internal/bot/**
