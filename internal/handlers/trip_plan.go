@@ -15,6 +15,7 @@ import (
 	"github.com/comu/api/internal/response"
 	"github.com/comu/api/internal/scheduler"
 	"github.com/comu/api/internal/scheduleview"
+	"github.com/comu/api/internal/topology"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -80,6 +81,7 @@ type tripPlanRequest struct {
 	WindowMinutes int    `json:"window_minutes,omitempty"`
 	MaxResults    int    `json:"max_results,omitempty"`
 	MaxTransfers  int    `json:"max_transfers,omitempty"`
+	PlannerMode   string `json:"planner_mode,omitempty"`
 }
 
 type tripPlanLeg struct {
@@ -199,9 +201,21 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 
 	plannerMeta := response.Metadata{
 		Success:         true,
+		PlannerMode:     "legacy",
 		Projected:       projectionMeta.Projected,
 		SnapshotDateWIB: projectionMeta.SnapshotDateWIB,
 		SnapshotAgeDays: projectionMeta.SnapshotAgeDays,
+	}
+
+	plannerMode := normalizePlannerMode(req.PlannerMode, c.Query("planner_mode"))
+	plannerMeta.PlannerMode = plannerMode
+	var graph *topology.KRLTopology
+	if plannerMode == "graph" {
+		graph, err = topology.LoadKRLTopology()
+		if err != nil {
+			response.BuildError(c, http.StatusInternalServerError, "failed to load planner topology")
+			return
+		}
 	}
 
 	if len(firstLegSchedules) == 0 {
@@ -245,7 +259,7 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 		if len(route) == 0 {
 			continue
 		}
-		route = appendRouteFallbackStops(route, fromID, first.Route)
+		route = prepareRoute(route, fromID, first.Route, plannerMode, graph)
 		fromIdx := findRouteIndex(route, fromID, first.DepartsAt.Add(-tripMinTransfer))
 		if fromIdx < 0 {
 			continue
@@ -287,6 +301,10 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 					ArriveAt:        seed.arriveAt,
 					DurationMinutes: minutesDiff(seed.legs[0].DepartAt, seed.arriveAt),
 				})
+				continue
+			}
+
+			if plannerMode == "graph" && graph != nil && !graph.IsInterchange(seed.stationID) {
 				continue
 			}
 
@@ -402,7 +420,15 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 				if len(route) == 0 {
 					continue
 				}
-				route = appendRouteFallbackStops(route, transferID, dep.Route)
+				route = prepareRoute(route, transferID, dep.Route, plannerMode, graph)
+				if plannerMode == "graph" && graph != nil {
+					corridorID, ok := classifyRouteGraph(graph, dep.Route, route)
+					if ok && !graph.CanReach(corridorID, transferID, toID) {
+						if findStopInRoute(route, toID) < 0 {
+							continue
+						}
+					}
+				}
 				fromIdx := findRouteIndex(route, transferID, dep.DepartsAt.Add(-tripMinTransfer))
 				if fromIdx < 0 {
 					continue
@@ -458,6 +484,9 @@ func (h *TripPlanHandler) GetTripPlan(c *gin.Context) {
 							continue
 						}
 						nextSeedSeen[key] = struct{}{}
+						if plannerMode == "graph" && graph != nil && !graph.IsInterchange(stopStation) {
+							continue
+						}
 						b := nextSeeds[stopStation]
 						if len(b) < 8 {
 							nextSeeds[stopStation] = append(b, next)
@@ -528,6 +557,169 @@ func findRouteIndex(route []models.Schedule, stationID string, minTime time.Time
 		}
 	}
 	return -1
+}
+
+func findStopInRoute(route []models.Schedule, stationID string) int {
+	stationID = strings.ToUpper(strings.TrimSpace(stationID))
+	for i, stop := range route {
+		if strings.ToUpper(strings.TrimSpace(stop.StationID)) == stationID {
+			return i
+		}
+	}
+	return -1
+}
+
+func normalizePlannerMode(values ...string) string {
+	for _, value := range values {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "graph":
+			return "graph"
+		case "legacy":
+			return "legacy"
+		}
+	}
+	return "legacy"
+}
+
+func prepareRoute(route []models.Schedule, fromID, routeName, plannerMode string, graph *topology.KRLTopology) []models.Schedule {
+	if plannerMode == "graph" && graph != nil {
+		return appendRouteGraphStops(route, fromID, routeName, graph)
+	}
+	return appendRouteFallbackStops(route, fromID, routeName)
+}
+
+func classifyRouteGraph(graph *topology.KRLTopology, routeName string, route []models.Schedule) (string, bool) {
+	stops := make([]string, 0, len(route))
+	for _, stop := range route {
+		stops = append(stops, stop.StationID)
+	}
+	return graph.ClassifyRoute(routeName, stops)
+}
+
+func appendRouteGraphStops(route []models.Schedule, fromID, routeName string, graph *topology.KRLTopology) []models.Schedule {
+	if len(route) == 0 || graph == nil {
+		return route
+	}
+
+	corridorID, ok := classifyRouteGraph(graph, routeName, route)
+	if !ok {
+		return route
+	}
+
+	stations := graph.Corridors[corridorID]
+	indexByStation := map[string]int{}
+	for i, stationID := range stations {
+		indexByStation[strings.ToUpper(strings.TrimSpace(stationID))] = i
+	}
+
+	type routePoint struct {
+		routeIdx    int
+		corridorIdx int
+	}
+
+	points := make([]routePoint, 0, len(route))
+	for i, stop := range route {
+		if idx, exists := indexByStation[strings.ToUpper(strings.TrimSpace(stop.StationID))]; exists {
+			points = append(points, routePoint{routeIdx: i, corridorIdx: idx})
+		}
+	}
+	if len(points) == 0 {
+		return route
+	}
+
+	updated := append([]models.Schedule{}, route...)
+	inserted := 0
+	for i := 0; i < len(points)-1; i++ {
+		left := points[i]
+		right := points[i+1]
+		if right.corridorIdx-left.corridorIdx <= 1 {
+			continue
+		}
+		routeInsertAt := right.routeIdx + inserted
+		prev := updated[routeInsertAt-1]
+		next := updated[routeInsertAt]
+		missing := stations[left.corridorIdx+1 : right.corridorIdx]
+		toInsert := interpolateGraphStops(prev, next, missing, routeName)
+		head := append([]models.Schedule{}, updated[:routeInsertAt]...)
+		head = append(head, toInsert...)
+		updated = append(head, updated[routeInsertAt:]...)
+		inserted += len(toInsert)
+	}
+
+	destinationID := route[len(route)-1].DestinationID
+	if strings.TrimSpace(destinationID) == "" {
+		destinationID = parseRouteTerminalID(routeName)
+	}
+	destinationID = strings.ToUpper(strings.TrimSpace(destinationID))
+	if destinationID == "" || findStopInRoute(updated, destinationID) >= 0 {
+		return updated
+	}
+
+	lastKnownCorridorIdx := -1
+	for i := len(updated) - 1; i >= 0; i-- {
+		if idx, exists := indexByStation[strings.ToUpper(strings.TrimSpace(updated[i].StationID))]; exists {
+			lastKnownCorridorIdx = idx
+			break
+		}
+	}
+	destIdx, exists := indexByStation[destinationID]
+	if !exists || lastKnownCorridorIdx < 0 || destIdx <= lastKnownCorridorIdx {
+		return updated
+	}
+
+	last := updated[len(updated)-1]
+	tail := last.DepartsAt.Add(5 * time.Minute)
+	if !last.ArrivesAt.IsZero() && last.ArrivesAt.After(last.DepartsAt) {
+		tail = last.ArrivesAt
+	}
+	updated = append(updated, models.Schedule{
+		TrainID:       last.TrainID,
+		Line:          last.Line,
+		Route:         routeName,
+		OriginID:      last.OriginID,
+		DestinationID: destinationID,
+		StationID:     destinationID,
+		DepartsAt:     tail,
+		ArrivesAt:     tail,
+	})
+	return updated
+}
+
+func interpolateGraphStops(prev, next models.Schedule, stations []string, routeName string) []models.Schedule {
+	if len(stations) == 0 {
+		return nil
+	}
+	prevT := prev.DepartsAt
+	if !prev.ArrivesAt.IsZero() && prev.ArrivesAt.After(prev.DepartsAt) {
+		prevT = prev.ArrivesAt
+	}
+	nextT := next.DepartsAt
+	if nextT.IsZero() {
+		nextT = next.ArrivesAt
+	}
+	step := time.Minute
+	if nextT.After(prevT) {
+		step = nextT.Sub(prevT) / time.Duration(len(stations)+1)
+		if step <= 0 {
+			step = time.Minute
+		}
+	}
+
+	out := make([]models.Schedule, 0, len(stations))
+	for i, stationID := range stations {
+		at := prevT.Add(step * time.Duration(i+1))
+		out = append(out, models.Schedule{
+			TrainID:       prev.TrainID,
+			Line:          prev.Line,
+			Route:         routeName,
+			OriginID:      prev.OriginID,
+			DestinationID: prev.DestinationID,
+			StationID:     stationID,
+			DepartsAt:     at,
+			ArrivesAt:     at,
+		})
+	}
+	return out
 }
 
 func findDestinationForward(route []models.Schedule, fromIdx int, toID string) int {

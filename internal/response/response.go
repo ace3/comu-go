@@ -10,6 +10,7 @@ import (
 type Metadata struct {
 	Success         bool   `json:"success"`
 	Message         string `json:"message,omitempty"`
+	PlannerMode     string `json:"planner_mode,omitempty"`
 	Projected       bool   `json:"projected,omitempty"`
 	SnapshotDateWIB string `json:"snapshot_date_wib,omitempty"`
 	SnapshotAgeDays int    `json:"snapshot_age_days,omitempty"`
@@ -71,7 +72,7 @@ func BuildPaginatedSuccess(data any, page, limit, total int) PaginatedResponse {
 func BuildPaginatedSuccessWithMetadata(data any, metadata PaginatedMetadata) PaginatedResponse {
 	return PaginatedResponse{
 		Metadata: metadata,
-		Data: data,
+		Data:     data,
 	}
 }
 

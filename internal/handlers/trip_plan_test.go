@@ -128,6 +128,9 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 		if !resp.Metadata.Success {
 			t.Fatalf("expected success=true")
 		}
+		if resp.Metadata.PlannerMode != "legacy" {
+			t.Fatalf("planner_mode = %q, expected legacy", resp.Metadata.PlannerMode)
+		}
 		if len(resp.Data.Options) == 0 {
 			t.Fatalf("expected options > 0")
 		}
@@ -150,6 +153,61 @@ func TestTripPlanHandler_GetTripPlan(t *testing.T) {
 		h.GetTripPlan(c)
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("status = %d, expected 400", w.Code)
+		}
+	})
+
+	t.Run("supports graph planner mode and reports metadata", func(t *testing.T) {
+		dbMode := setupTestDB(t)
+		hMode := NewTripPlanHandler(dbMode, nil)
+		rows := []models.Schedule{
+			{ID: "g1-sud", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "SUD", DepartsAt: mustWIBTime(t, "20:20"), ArrivesAt: mustWIBTime(t, "20:20")},
+			{ID: "g1-thb", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "THB", DepartsAt: mustWIBTime(t, "20:29"), ArrivesAt: mustWIBTime(t, "20:29")},
+			{ID: "g1-ak", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "AK", DepartsAt: mustWIBTime(t, "20:40"), ArrivesAt: mustWIBTime(t, "20:40")},
+			{ID: "g1-kpb", TrainID: "5575C", Line: "Commuter Line Cikarang", Route: "CIKARANG-KAMPUNGBANDAN VIA MRI", OriginID: "CKR", DestinationID: "KPB", StationID: "KPB", DepartsAt: mustWIBTime(t, "20:47"), ArrivesAt: mustWIBTime(t, "20:47")},
+			{ID: "g2-du", TrainID: "1907A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "DU", DepartsAt: mustWIBTime(t, "20:50"), ArrivesAt: mustWIBTime(t, "20:50")},
+			{ID: "g2-rw", TrainID: "1907A", Line: "Commuter Line Tangerang", Route: "DU-RW", OriginID: "DU", DestinationID: "RW", StationID: "RW", DepartsAt: mustWIBTime(t, "21:05"), ArrivesAt: mustWIBTime(t, "21:05")},
+		}
+		for _, row := range rows {
+			if err := dbMode.Create(&row).Error; err != nil {
+				t.Fatalf("seed row %s: %v", row.ID, err)
+			}
+		}
+
+		body := map[string]any{
+			"from_id":        "SUD",
+			"to_id":          "RW",
+			"at":             "2026-03-05T20:05:00+07:00",
+			"window_minutes": 90,
+			"max_results":    8,
+			"max_transfers":  1,
+			"planner_mode":   "graph",
+		}
+		raw, _ := json.Marshal(body)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+		c.Request.Header.Set("Content-Type", "application/json")
+		hMode.GetTripPlan(c)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, expected 200, body=%s", w.Code, w.Body.String())
+		}
+		var resp tripPlanTestResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("parse response: %v", err)
+		}
+		if resp.Metadata.PlannerMode != "graph" {
+			t.Fatalf("planner_mode = %q, expected graph", resp.Metadata.PlannerMode)
+		}
+		found := false
+		for _, opt := range resp.Data.Options {
+			if len(opt.Legs) >= 2 && opt.Legs[0].TrainID == "5575C" && opt.Legs[0].To == "DU" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected graph planner to infer DU transfer from 5575C route")
 		}
 	})
 

@@ -1,0 +1,23 @@
+{
+  "corridors": {
+    "tangerang": ["TNG", "THI", "BPR", "PI", "KDS", "RW", "BOI", "TKO", "PSG", "GRG", "DU"],
+    "cikarang_via_mri": ["CKR", "MTM", "CIT", "TBN", "BKST", "BKS", "KRI", "CUK", "KLB", "BUA", "JNG", "MRI", "SUD", "KAT", "THB", "DU", "AK", "KPB"],
+    "cikarang_via_pse": ["CKR", "MTM", "CIT", "TBN", "BKST", "BKS", "KRI", "CUK", "KLB", "BUA", "JNG", "PSE", "RJW", "KMO", "JYK", "JAKK", "DU", "AK", "KPB"],
+    "bogor_main": ["JAKK", "JYK", "KMO", "SW", "JUA", "GDD", "CKI", "MRI", "TEB", "CW", "DKA", "PSMB", "PSM", "TJB", "LNA", "UP", "UI", "PCN", "DPB", "DP", "CTA", "BJD", "CLT", "BOJ", "BOO"],
+    "bogor_nambo": ["CTA", "CBN", "PDJ", "NMO"],
+    "rangkasbitung": ["THB", "PLM", "KBY", "PDJ", "JMU", "SDM", "RBU", "SRP", "CSK", "CC", "JTK", "PRP", "CLJ", "DAR", "TEJ", "TGS", "CKY", "MJA", "CTR", "RK"],
+    "merak": ["RK", "JMB", "CT", "CKL", "SRG", "KTB", "CLG", "KRC", "MRK"],
+    "tanjung_priok": ["JAKK", "JYK", "AC", "TPK"],
+    "airport": ["BST", "THI", "BPR", "DU", "SUDB", "MRI"]
+  },
+  "interchanges": {
+    "DU": ["tangerang", "cikarang_via_mri", "cikarang_via_pse", "airport"],
+    "MRI": ["cikarang_via_mri", "bogor_main", "airport"],
+    "THB": ["cikarang_via_mri", "rangkasbitung"],
+    "JAKK": ["cikarang_via_pse", "bogor_main", "tanjung_priok"],
+    "KPB": ["cikarang_via_mri", "cikarang_via_pse", "tanjung_priok"],
+    "CTA": ["bogor_main", "bogor_nambo"],
+    "RK": ["rangkasbitung", "merak"],
+    "BPR": ["tangerang", "airport"]
+  }
+}

@@ -226,3 +226,54 @@ test("dominates and removes non-optimal options across different departure times
   );
   assert.equal(hasEarlyDepartAndLaterArrival, false);
 });
+
+test("graph planner infers valid transfer stop from topology when route data is partial", async () => {
+  const customRoutesByTrainID = {
+    F1: [
+      stop("SUD", "20:20"),
+      stop("THB", "20:29"),
+      stop("AK", "20:40"),
+      stop("KPB", "20:47"),
+    ],
+    T1: [
+      stop("DU", "20:50"),
+      stop("RW", "21:05"),
+    ],
+  };
+
+  const customSchedulesByStation = {
+    SUD: [
+      {
+        train_id: "F1",
+        line: "Commuter Line Cikarang",
+        route: "CIKARANG-KAMPUNGBANDAN VIA MRI",
+        departs_at: iso("20:20"),
+      },
+    ],
+    DU: [
+      {
+        train_id: "T1",
+        line: "Commuter Line Tangerang",
+        route: "DU-RW",
+        departs_at: iso("20:50"),
+      },
+    ],
+  };
+
+  const result = await findTripOptions({
+    fromID: "SUD",
+    toID: "RW",
+    now: new Date(iso("20:05")),
+    firstLegSchedules: customSchedulesByStation.SUD,
+    getRoute: async (trainID) => customRoutesByTrainID[trainID] || [],
+    getStationSchedules: async (stationID) => customSchedulesByStation[stationID] || [],
+    plannerMode: "graph",
+  });
+
+  assert.ok(result.options.length > 0);
+  assert.ok(result.options.some((option) =>
+    option.legs.length === 2
+    && option.legs[0].trainId === "F1"
+    && option.legs[0].to === "DU"
+    && option.legs[1].trainId === "T1"));
+});
