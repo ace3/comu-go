@@ -1,4 +1,12 @@
 (function (root) {
+  const topologyApi = root.KRLTopology || (typeof require === "function" ? (() => {
+    try {
+      return require("./krl_topology.js");
+    } catch (_) {
+      return null;
+    }
+  })() : null);
+
   function diffMinutes(from, to) {
     return Math.max(0, Math.round((to.getTime() - from.getTime()) / 60000));
   }
@@ -47,17 +55,28 @@
     return String(schedule.line || "") === String(currentLeg.line || "") && dep > currentLeg.departAt;
   }
 
-  async function findAlternateDeparture(schedules, currentLeg, destStationID, fetchRoute) {
+  async function findAlternateDeparture(schedules, currentLeg, destStationID, fetchRoute, options = {}) {
     if (!Array.isArray(schedules) || !currentLeg || !destStationID || typeof fetchRoute !== "function") {
       return null;
     }
 
+    const topology = options?.topology || null;
     const candidates = schedules
       .filter((schedule) => scheduleDepartsAfterCurrent(schedule, currentLeg))
       .sort((a, b) => new Date(a.departs_at) - new Date(b.departs_at));
 
     const destination = String(destStationID || "").toUpperCase();
     for (const candidate of candidates) {
+      if (topology && topologyApi) {
+        const classification = topologyApi.classifyRoute(
+          topology,
+          candidate.route,
+          [],
+        );
+        if (classification?.ok && !topologyApi.canReach(topology, classification.corridorID, currentLeg.from, destination)) {
+          continue;
+        }
+      }
       let route;
       try {
         route = await fetchRoute(candidate.train_id);

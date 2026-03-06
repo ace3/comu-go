@@ -35,6 +35,7 @@ let preferredStations = [];
 let selectedSet = new Set();
 const routeCache = new Map();
 const stationScheduleCache = new Map();
+let topologyPromise = null;
 let lastTripOptions = [];
 let lastTripStats = null;
 const tripPlanFormatter = window.TripPlanFormatter || {
@@ -127,10 +128,11 @@ function readTripPlannerPrefs() {
     return {
       fromID: String(raw.fromID || "").toUpperCase(),
       toID: String(raw.toID || "").toUpperCase(),
+      plannerMode: normalizePlannerMode(raw.plannerMode),
       showLongWait: Boolean(raw.showLongWait),
     };
   } catch (_) {
-    return { fromID: "", toID: "", showLongWait: false };
+    return { fromID: "", toID: "", plannerMode: "legacy", showLongWait: false };
   }
 }
 
@@ -141,6 +143,26 @@ function saveTripPlannerPrefs(partial) {
     localStorage.setItem(TRIP_PLANNER_PREFS_KEY, JSON.stringify(next));
   } catch (_) {
   }
+}
+
+function normalizePlannerMode(value) {
+  return String(value || "").toLowerCase() === "graph" ? "graph" : "legacy";
+}
+
+function plannerModeOverride() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return normalizePlannerMode(params.get("planner_mode") || params.get("planner"));
+  } catch (_) {
+    return "legacy";
+  }
+}
+
+async function loadKRLTopology() {
+  if (!topologyPromise) {
+    topologyPromise = fetchWithTimeout("/app/assets/krl_topology.json");
+  }
+  return topologyPromise;
 }
 
 function showStatus(message, isError = false) {
@@ -518,11 +540,13 @@ function renderTripPlans(options) {
           altLoaded = true;
           try {
             const schedules = await fetchStationSchedules(capturedNextLeg.from);
+            const topology = await loadKRLTopology().catch(() => null);
             const next = await tripPlanFormatter.findAlternateDeparture(
               schedules,
               capturedNextLeg,
               destStationID,
               fetchTrainRoute,
+              { topology },
             );
             if (next) {
               const depTime = formatWIBTime(next.departs_at);
@@ -630,6 +654,7 @@ async function generateTripPlan() {
 
   try {
     const now = new Date();
+    const plannerMode = plannerModeOverride();
     const payload = await fetchWithTimeout(`${API_BASE}/trip-plan`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -640,6 +665,7 @@ async function generateTripPlan() {
         window_minutes: TRIP_PLANNER_WINDOW_MINUTES,
         max_results: PLANNER_MAX_RESULTS,
         max_transfers: 2,
+        planner_mode: plannerMode,
       }),
     });
 

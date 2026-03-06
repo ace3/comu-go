@@ -1,4 +1,18 @@
 (function (root) {
+  const topologyApi = (() => {
+    if (root.KRLTopology) {
+      return root.KRLTopology;
+    }
+    if (typeof require === "function") {
+      try {
+        return require("./krl_topology.js");
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  })();
+
   const DEFAULTS = {
     minTransferMs: 1 * 60 * 1000,
     maxTransferMs: 240 * 60 * 1000,
@@ -35,6 +49,17 @@
 
   function toTime(value) {
     return value instanceof Date ? value : new Date(value);
+  }
+
+  function defaultTopology() {
+    if (typeof require === "function") {
+      try {
+        return require("./krl_topology.json");
+      } catch (_) {
+        return null;
+      }
+    }
+    return root.__KRL_TOPOLOGY_DATA__ || null;
   }
 
   function diffMinutes(from, to) {
@@ -231,6 +256,108 @@
     return forwardStops;
   }
 
+  function findStopIndexInRoute(route, stationID) {
+    return route.findIndex((stop) => String(stop.station_id || "").toUpperCase() === stationID);
+  }
+
+  function interpolateStops(prev, next, stations, routeName) {
+    if (!Array.isArray(stations) || stations.length === 0) {
+      return [];
+    }
+    const prevTime = getStopTime(prev);
+    const nextTime = getStopTime(next);
+    let stepMs = 60 * 1000;
+    if (nextTime > prevTime) {
+      stepMs = Math.max(60 * 1000, Math.round((nextTime.getTime() - prevTime.getTime()) / (stations.length + 1)));
+    }
+
+    return stations.map((stationID, index) => {
+      const at = new Date(prevTime.getTime() + (stepMs * (index + 1)));
+      return {
+        station_id: stationID,
+        departs_at: at.toISOString(),
+        arrives_at: at.toISOString(),
+        route: routeName,
+      };
+    });
+  }
+
+  function appendGraphStops(route, fromID, routeName, topology) {
+    if (!Array.isArray(route) || route.length === 0 || !topology || !topologyApi) {
+      return route;
+    }
+    const stops = route.map((stop) => String(stop.station_id || "").toUpperCase());
+    const classification = topologyApi.classifyRoute(topology, routeName, stops);
+    if (!classification?.ok) {
+      return route;
+    }
+
+    const corridorStations = topology.corridors?.[classification.corridorID] || [];
+    const corridorIndex = {};
+    corridorStations.forEach((stationID, index) => {
+      corridorIndex[String(stationID || "").toUpperCase()] = index;
+    });
+
+    const points = route
+      .map((stop, routeIdx) => ({
+        routeIdx,
+        corridorIdx: corridorIndex[String(stop.station_id || "").toUpperCase()],
+      }))
+      .filter((point) => Number.isInteger(point.corridorIdx));
+    if (points.length === 0) {
+      return route;
+    }
+
+    let updated = [...route];
+    let inserted = 0;
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const left = points[i];
+      const right = points[i + 1];
+      if (right.corridorIdx - left.corridorIdx <= 1) {
+        continue;
+      }
+      const insertAt = right.routeIdx + inserted;
+      const missingStations = corridorStations.slice(left.corridorIdx + 1, right.corridorIdx);
+      const fillerStops = interpolateStops(updated[insertAt - 1], updated[insertAt], missingStations, routeName);
+      updated = [
+        ...updated.slice(0, insertAt),
+        ...fillerStops,
+        ...updated.slice(insertAt),
+      ];
+      inserted += fillerStops.length;
+    }
+
+    const terminalID = parseRouteTerminalID(routeName);
+    if (!terminalID || findStopIndexInRoute(updated, terminalID) >= 0) {
+      return updated;
+    }
+
+    const lastKnown = [...updated].reverse().find((stop) => Number.isInteger(corridorIndex[String(stop.station_id || "").toUpperCase()]));
+    if (!lastKnown) {
+      return updated;
+    }
+    const lastIdx = corridorIndex[String(lastKnown.station_id || "").toUpperCase()];
+    const terminalIdx = corridorIndex[terminalID];
+    if (!Number.isInteger(terminalIdx) || terminalIdx <= lastIdx) {
+      return updated;
+    }
+    const tailTime = getStopTime(updated[updated.length - 1]);
+    const at = new Date(tailTime.getTime() + (5 * 60 * 1000));
+    return updated.concat({
+      station_id: terminalID,
+      departs_at: at.toISOString(),
+      arrives_at: at.toISOString(),
+      route: routeName,
+    });
+  }
+
+  function prepareRoute(route, fromID, routeName, plannerMode, topology) {
+    if (plannerMode === "graph") {
+      return appendGraphStops(route, fromID, routeName, topology);
+    }
+    return route;
+  }
+
   async function findTripOptions(input) {
     const config = { ...DEFAULTS, ...(input?.config || {}) };
     const fromID = String(input?.fromID || "").toUpperCase();
@@ -243,6 +370,8 @@
 
     const getRoute = input?.getRoute;
     const getStationSchedules = input?.getStationSchedules;
+    const plannerMode = String(input?.plannerMode || "legacy").toLowerCase() === "graph" ? "graph" : "legacy";
+    const topology = input?.topology || defaultTopology();
     if (typeof getRoute !== "function" || typeof getStationSchedules !== "function") {
       throw new Error("findTripOptions requires getRoute and getStationSchedules functions");
     }
@@ -268,7 +397,7 @@
 
     for (const first of firstLegCandidates) {
       const departAt = toTime(first.departs_at);
-      const route = await getRoute(first.train_id);
+      const route = prepareRoute(await getRoute(first.train_id), fromID, first.route, plannerMode, topology);
       const forwardStops = extractForwardStops(
         route,
         fromID,
@@ -302,6 +431,9 @@
           continue;
         }
 
+        if (plannerMode === "graph" && topologyApi && topology && !topologyApi.isInterchange(topology, stop.stationID)) {
+          continue;
+        }
         if (!oneTransferSeeds.has(stop.stationID)) {
           oneTransferSeeds.set(stop.stationID, []);
         }
@@ -348,7 +480,19 @@
           break;
         }
         const secondDepartAt = toTime(second.departs_at);
-        const secondRoute = await getRoute(second.train_id);
+        const secondRoute = prepareRoute(await getRoute(second.train_id), transferStationID, second.route, plannerMode, topology);
+        if (plannerMode === "graph" && topologyApi && topology) {
+          const classification = topologyApi.classifyRoute(
+            topology,
+            second.route,
+            secondRoute.map((stop) => stop.station_id),
+          );
+          if (classification?.ok && !topologyApi.canReach(topology, classification.corridorID, transferStationID, toID)) {
+            if (!secondRoute.some((stop) => String(stop.station_id || "").toUpperCase() === toID)) {
+              continue;
+            }
+          }
+        }
         const secondForwardStops = extractForwardStops(
           secondRoute,
           transferStationID,
