@@ -45,6 +45,14 @@ const tripPlanFormatter = window.TripPlanFormatter || {
     return `Transit at ${stationNameOnlyFn(firstLeg.to)} • arrive ${formatTime(firstLeg.arriveAt)} • depart ${formatTime(secondLeg.departAt)} • wait ${waitMin} min`;
   },
   classifyTransferWait: () => "",
+  findAlternateDeparture: async (schedules, currentLeg) => {
+    const candidates = Array.isArray(schedules)
+      ? schedules
+        .filter((schedule) => String(schedule.line || "") === String(currentLeg.line || "") && new Date(schedule.departs_at) > currentLeg.departAt)
+        .sort((a, b) => new Date(a.departs_at) - new Date(b.departs_at))
+      : [];
+    return candidates[0] || null;
+  },
   optionHasLongWait: () => false,
 };
 
@@ -510,16 +518,12 @@ function renderTripPlans(options) {
           altLoaded = true;
           try {
             const schedules = await fetchStationSchedules(capturedNextLeg.from);
-            const connSchedule = schedules.find((s) => s.train_id === capturedNextLeg.trainId);
-            const connRoute = connSchedule ? String(connSchedule.route || "") : "";
-            const candidates = schedules
-              .filter((s) => {
-                const dep = new Date(s.departs_at);
-                if (s.line !== capturedNextLeg.line || dep <= capturedNextLeg.departAt) return false;
-                return connRoute ? String(s.route || "") === connRoute : true;
-              })
-              .sort((a, b) => new Date(a.departs_at) - new Date(b.departs_at));
-            const next = candidates[0];
+            const next = await tripPlanFormatter.findAlternateDeparture(
+              schedules,
+              capturedNextLeg,
+              destStationID,
+              fetchTrainRoute,
+            );
             if (next) {
               const depTime = formatWIBTime(next.departs_at);
               const extraWait = diffMinutes(capturedLeg.arriveAt, new Date(next.departs_at));

@@ -39,10 +39,46 @@
     return false;
   }
 
+  function scheduleDepartsAfterCurrent(schedule, currentLeg) {
+    if (!schedule || !currentLeg) {
+      return false;
+    }
+    const dep = new Date(schedule.departs_at);
+    return String(schedule.line || "") === String(currentLeg.line || "") && dep > currentLeg.departAt;
+  }
+
+  async function findAlternateDeparture(schedules, currentLeg, destStationID, fetchRoute) {
+    if (!Array.isArray(schedules) || !currentLeg || !destStationID || typeof fetchRoute !== "function") {
+      return null;
+    }
+
+    const candidates = schedules
+      .filter((schedule) => scheduleDepartsAfterCurrent(schedule, currentLeg))
+      .sort((a, b) => new Date(a.departs_at) - new Date(b.departs_at));
+
+    const destination = String(destStationID || "").toUpperCase();
+    for (const candidate of candidates) {
+      let route;
+      try {
+        route = await fetchRoute(candidate.train_id);
+      } catch (_) {
+        continue;
+      }
+      const reachesDestination = Array.isArray(route)
+        && route.some((stop) => String(stop.station_id || "").toUpperCase() === destination);
+      if (reachesDestination) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
   const api = {
     buildLegDetailText,
     buildTransferDetailText,
     classifyTransferWait,
+    findAlternateDeparture,
     optionHasLongWait,
   };
 

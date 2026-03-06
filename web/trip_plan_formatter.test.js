@@ -5,6 +5,7 @@ const {
   buildLegDetailText,
   buildTransferDetailText,
   classifyTransferWait,
+  findAlternateDeparture,
   optionHasLongWait,
 } = require("./trip_plan_formatter.js");
 
@@ -63,4 +64,44 @@ test("optionHasLongWait detects long transfer waits", () => {
 
   assert.equal(optionHasLongWait(longWaitOption), true);
   assert.equal(optionHasLongWait(safeOption), false);
+});
+
+test("findAlternateDeparture skips same-line trains that do not reach the destination", async () => {
+  const schedules = [
+    {
+      train_id: "5080B",
+      line: "Commuter Line Cikarang",
+      departs_at: "2026-03-06T11:07:00+07:00",
+      route: "ANGKE-BEKASI",
+    },
+    {
+      train_id: "5064B",
+      line: "Commuter Line Cikarang",
+      departs_at: "2026-03-06T09:32:00+07:00",
+      route: "ANGKE-CIKARANG",
+    },
+  ];
+  const currentLeg = {
+    trainId: "5062C",
+    line: "Commuter Line Cikarang",
+    departAt: new Date("2026-03-06T09:22:00+07:00"),
+  };
+
+  const alternate = await findAlternateDeparture(
+    schedules,
+    currentLeg,
+    "SUD",
+    async (trainID) => {
+      if (trainID === "5080B") {
+        return [{ station_id: "DU" }, { station_id: "AK" }, { station_id: "BKS" }];
+      }
+      if (trainID === "5064B") {
+        return [{ station_id: "DU" }, { station_id: "SUD" }, { station_id: "CKR" }];
+      }
+      return [];
+    },
+  );
+
+  assert.ok(alternate);
+  assert.equal(alternate.train_id, "5064B");
 });
