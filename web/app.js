@@ -570,7 +570,11 @@ function renderTripPlans(options) {
               // Show arrival at final destination
               try {
                 const altRoute = await fetchTrainRoute(next.train_id);
-                const destStop = altRoute.find((s) => String(s.station_id || "").toUpperCase() === destStationID);
+                const destStop = tripPlanFormatter.findArrivalStopAfterDeparture(
+                  altRoute,
+                  destStationID,
+                  new Date(next.departs_at),
+                );
                 if (destStop) {
                   const arrTime = formatWIBTime(destStop.departs_at || destStop.arrives_at);
                   const sep2 = document.createElement("span");

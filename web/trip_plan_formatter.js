@@ -55,6 +55,47 @@
     return String(schedule.line || "") === String(currentLeg.line || "") && dep > currentLeg.departAt;
   }
 
+  function parseStopTime(stop) {
+    if (!stop) {
+      return null;
+    }
+    const raw = stop.departs_at || stop.arrives_at;
+    if (!raw) {
+      return null;
+    }
+    const value = new Date(raw);
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  function findArrivalStopAfterDeparture(route, destStationID, boardedDepartureAt) {
+    if (!Array.isArray(route) || !destStationID || !boardedDepartureAt) {
+      return null;
+    }
+
+    const destination = String(destStationID || "").toUpperCase();
+    const boardedAt = boardedDepartureAt instanceof Date ? boardedDepartureAt : new Date(boardedDepartureAt);
+    if (Number.isNaN(boardedAt.getTime())) {
+      return null;
+    }
+
+    let bestStop = null;
+    let bestTime = null;
+    for (const stop of route) {
+      if (String(stop.station_id || "").toUpperCase() !== destination) {
+        continue;
+      }
+      const stopTime = parseStopTime(stop);
+      if (!stopTime || stopTime <= boardedAt) {
+        continue;
+      }
+      if (!bestTime || stopTime < bestTime) {
+        bestStop = stop;
+        bestTime = stopTime;
+      }
+    }
+    return bestStop;
+  }
+
   async function findAlternateDeparture(schedules, currentLeg, destStationID, fetchRoute, options = {}) {
     if (!Array.isArray(schedules) || !currentLeg || !destStationID || typeof fetchRoute !== "function") {
       return null;
@@ -83,9 +124,8 @@
       } catch (_) {
         continue;
       }
-      const reachesDestination = Array.isArray(route)
-        && route.some((stop) => String(stop.station_id || "").toUpperCase() === destination);
-      if (reachesDestination) {
+      const destinationStop = findArrivalStopAfterDeparture(route, destination, new Date(candidate.departs_at));
+      if (destinationStop) {
         return candidate;
       }
     }
@@ -98,6 +138,7 @@
     buildTransferDetailText,
     classifyTransferWait,
     findAlternateDeparture,
+    findArrivalStopAfterDeparture,
     optionHasLongWait,
   };
 

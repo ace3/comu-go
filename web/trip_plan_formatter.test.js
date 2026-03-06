@@ -6,6 +6,7 @@ const {
   buildTransferDetailText,
   classifyTransferWait,
   findAlternateDeparture,
+  findArrivalStopAfterDeparture,
   optionHasLongWait,
 } = require("./trip_plan_formatter.js");
 
@@ -93,10 +94,18 @@ test("findAlternateDeparture skips same-line trains that do not reach the destin
     "SUD",
     async (trainID) => {
       if (trainID === "5080B") {
-        return [{ station_id: "DU" }, { station_id: "AK" }, { station_id: "BKS" }];
+        return [
+          { station_id: "DU", departs_at: "2026-03-06T11:07:00+07:00" },
+          { station_id: "AK", departs_at: "2026-03-06T11:17:00+07:00" },
+          { station_id: "BKS", departs_at: "2026-03-06T11:29:00+07:00" },
+        ];
       }
       if (trainID === "5064B") {
-        return [{ station_id: "DU" }, { station_id: "SUD" }, { station_id: "CKR" }];
+        return [
+          { station_id: "DU", departs_at: "2026-03-06T09:32:00+07:00" },
+          { station_id: "SUD", departs_at: "2026-03-06T09:41:00+07:00" },
+          { station_id: "CKR", departs_at: "2026-03-06T10:18:00+07:00" },
+        ];
       }
       return [];
     },
@@ -104,4 +113,68 @@ test("findAlternateDeparture skips same-line trains that do not reach the destin
 
   assert.ok(alternate);
   assert.equal(alternate.train_id, "5064B");
+});
+
+test("findAlternateDeparture skips trains where the destination stop is before the boarding stop", async () => {
+  const schedules = [
+    {
+      train_id: "5089B",
+      line: "Commuter Line Cikarang",
+      departs_at: "2026-03-06T11:43:00+07:00",
+      route: "BEKASI-ANGKE",
+    },
+    {
+      train_id: "5086B",
+      line: "Commuter Line Cikarang",
+      departs_at: "2026-03-06T11:41:00+07:00",
+      route: "ANGKE-CIKARANG",
+    },
+  ];
+  const currentLeg = {
+    trainId: "5086B",
+    line: "Commuter Line Cikarang",
+    from: "DU",
+    departAt: new Date("2026-03-06T11:41:00+07:00"),
+  };
+
+  const alternate = await findAlternateDeparture(
+    schedules,
+    currentLeg,
+    "SUDB",
+    async (trainID) => {
+      if (trainID === "5089B") {
+        return [
+          { station_id: "SUDB", departs_at: "2026-03-06T11:30:00+07:00" },
+          { station_id: "DU", departs_at: "2026-03-06T11:43:00+07:00" },
+          { station_id: "AK", departs_at: "2026-03-06T11:56:00+07:00" },
+        ];
+      }
+      if (trainID === "5086B") {
+        return [
+          { station_id: "DU", departs_at: "2026-03-06T11:41:00+07:00" },
+          { station_id: "SUDB", departs_at: "2026-03-06T11:50:00+07:00" },
+        ];
+      }
+      return [];
+    },
+  );
+
+  assert.equal(alternate, null);
+});
+
+test("findArrivalStopAfterDeparture returns only a destination stop after boarded departure", () => {
+  const route = [
+    { station_id: "SUDB", departs_at: "2026-03-06T11:30:00+07:00" },
+    { station_id: "DU", departs_at: "2026-03-06T11:43:00+07:00" },
+    { station_id: "SUDB", departs_at: "2026-03-06T11:58:00+07:00" },
+  ];
+
+  const beforeBoarding = findArrivalStopAfterDeparture(
+    route,
+    "SUDB",
+    new Date("2026-03-06T11:43:00+07:00"),
+  );
+
+  assert.ok(beforeBoarding);
+  assert.equal(beforeBoarding.departs_at, "2026-03-06T11:58:00+07:00");
 });
