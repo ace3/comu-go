@@ -13,6 +13,9 @@ import (
 	"github.com/comu/api/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gorm.io/datatypes"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestCallbackDataRoundTrip(t *testing.T) {
@@ -199,6 +202,44 @@ func TestHandleMenuTextPlanTripShowsInlineMenu(t *testing.T) {
 	}
 }
 
+func TestSendScheduleWithWeatherRawFallsBackToTripPlan(t *testing.T) {
+	db := setupBotTestDB(t)
+	seedTripPlannerRoute(t, db)
+
+	client := &fakeTelegramClient{}
+	b := &Bot{
+		client: client,
+		db:     db,
+		cfg:    &config.Config{},
+		loc:    mustJakartaLocation(t),
+	}
+	msgs := i18n.New("en")
+	at := mustJakartaDateTime(t, "2026-03-05 15:51")
+
+	b.sendScheduleWithWeatherRaw(
+		context.Background(),
+		88,
+		&stationInfo{Name: "Rawa Buaya", Code: "RW"},
+		&stationInfo{Name: "Sudirman Baru", Code: "SUDB"},
+		at,
+		msgs,
+	)
+
+	if len(client.sent) != 1 {
+		t.Fatalf("expected one sent message, got %d", len(client.sent))
+	}
+	msg, ok := client.sent[0].(tgbotapi.MessageConfig)
+	if !ok {
+		t.Fatalf("expected MessageConfig, got %T", client.sent[0])
+	}
+	if strings.Contains(msg.Text, "No trains found") {
+		t.Fatalf("expected planner fallback instead of no-trains text, got %q", msg.Text)
+	}
+	if !strings.Contains(msg.Text, "A1") || !strings.Contains(msg.Text, "C1") {
+		t.Fatalf("expected transfer plan with A1 and C1, got %q", msg.Text)
+	}
+}
+
 type fakeTelegramClient struct {
 	sent     []tgbotapi.Chattable
 	requests []tgbotapi.Chattable
@@ -230,4 +271,63 @@ func testBotUser(t *testing.T) *models.BotUser {
 		AwayStation: datatypes.JSON(awayJSON),
 		Lang:        "en",
 	}
+}
+
+func setupBotTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	if err := db.AutoMigrate(&models.Station{}, &models.Schedule{}); err != nil {
+		t.Fatalf("migrate db: %v", err)
+	}
+	return db
+}
+
+func seedTripPlannerRoute(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	stations := []models.Station{
+		{UID: "rawa-buaya", ID: "RW", Name: "Rawa Buaya", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
+		{UID: "duri", ID: "DU", Name: "Duri", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
+		{UID: "sudirman-baru", ID: "SUDB", Name: "Sudirman Baru", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
+	}
+	for _, station := range stations {
+		if err := db.Create(&station).Error; err != nil {
+			t.Fatalf("seed station %s: %v", station.ID, err)
+		}
+	}
+
+	schedules := []models.Schedule{
+		{ID: "a1-rw", TrainID: "A1", Line: "Commuter Line Tangerang", Route: "RW-DU", OriginID: "RW", DestinationID: "DU", StationID: "RW", DepartsAt: mustJakartaDateTime(t, "2026-03-05 15:52"), ArrivesAt: mustJakartaDateTime(t, "2026-03-05 15:52"), Metadata: datatypes.JSON(`{}`)},
+		{ID: "a1-du", TrainID: "A1", Line: "Commuter Line Tangerang", Route: "RW-DU", OriginID: "RW", DestinationID: "DU", StationID: "DU", DepartsAt: mustJakartaDateTime(t, "2026-03-05 16:08"), ArrivesAt: mustJakartaDateTime(t, "2026-03-05 16:08"), Metadata: datatypes.JSON(`{}`)},
+		{ID: "c1-du", TrainID: "C1", Line: "Commuter Line Cikarang", Route: "DU-SUDB", OriginID: "DU", DestinationID: "SUDB", StationID: "DU", DepartsAt: mustJakartaDateTime(t, "2026-03-05 16:17"), ArrivesAt: mustJakartaDateTime(t, "2026-03-05 16:17"), Metadata: datatypes.JSON(`{}`)},
+		{ID: "c1-sudb", TrainID: "C1", Line: "Commuter Line Cikarang", Route: "DU-SUDB", OriginID: "DU", DestinationID: "SUDB", StationID: "SUDB", DepartsAt: mustJakartaDateTime(t, "2026-03-05 17:05"), ArrivesAt: mustJakartaDateTime(t, "2026-03-05 17:05"), Metadata: datatypes.JSON(`{}`)},
+	}
+	for _, schedule := range schedules {
+		if err := db.Create(&schedule).Error; err != nil {
+			t.Fatalf("seed schedule %s: %v", schedule.ID, err)
+		}
+	}
+}
+
+func mustJakartaDateTime(t *testing.T, value string) time.Time {
+	t.Helper()
+	loc := mustJakartaLocation(t)
+	parsed, err := time.ParseInLocation("2006-01-02 15:04", value, loc)
+	if err != nil {
+		t.Fatalf("parse time %s: %v", value, err)
+	}
+	return parsed
+}
+
+func mustJakartaLocation(t *testing.T) *time.Location {
+	t.Helper()
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		t.Fatalf("load jakarta loc: %v", err)
+	}
+	return loc
 }

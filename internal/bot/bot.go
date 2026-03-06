@@ -2,10 +2,13 @@
 package bot
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"time"
 
@@ -13,7 +16,9 @@ import (
 	"github.com/comu/api/internal/bot/session"
 	"github.com/comu/api/internal/bot/weather"
 	"github.com/comu/api/internal/config"
+	"github.com/comu/api/internal/handlers"
 	"github.com/comu/api/internal/models"
+	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -36,6 +41,23 @@ type Bot struct {
 type telegramClient interface {
 	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
+}
+
+type botTripPlanResponse struct {
+	Data struct {
+		Options []struct {
+			DepartAt string `json:"departAt"`
+			ArriveAt string `json:"arriveAt"`
+			Legs     []struct {
+				TrainID  string `json:"trainId"`
+				Line     string `json:"line"`
+				From     string `json:"from"`
+				To       string `json:"to"`
+				DepartAt string `json:"departAt"`
+				ArriveAt string `json:"arriveAt"`
+			} `json:"legs"`
+		} `json:"options"`
+	} `json:"data"`
 }
 
 // New creates a new Bot instance.
@@ -720,6 +742,14 @@ func (b *Bot) sendScheduleWithWeatherRaw(ctx context.Context, chatID int64, orig
 	}
 
 	if len(schedules) == 0 {
+		tripSummary, err := b.buildTripPlanSummary(ctx, origin, dest, t)
+		if err != nil {
+			slog.Warn("trip plan fallback failed", "error", err)
+		}
+		if strings.TrimSpace(tripSummary) != "" {
+			b.sendMarkdown(chatID, sb.String()+tripSummary)
+			return
+		}
 		b.sendMarkdown(chatID, sb.String()+msgs.NoTrains(origin.Name, dest.Name, window))
 		return
 	}
@@ -733,6 +763,91 @@ func (b *Bot) sendScheduleWithWeatherRaw(ctx context.Context, chatID int64, orig
 	sb.WriteString("\n_Use /schedule for a full search._")
 
 	b.sendMarkdown(chatID, sb.String())
+}
+
+func (b *Bot) buildTripPlanSummary(ctx context.Context, origin, dest *stationInfo, at time.Time) (string, error) {
+	if b.db == nil {
+		return "", nil
+	}
+
+	body := map[string]any{
+		"from_id":        strings.ToUpper(strings.TrimSpace(origin.Code)),
+		"to_id":          strings.ToUpper(strings.TrimSpace(dest.Code)),
+		"at":             at.Format(time.RFC3339),
+		"window_minutes": 60,
+		"max_results":    3,
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return "", err
+	}
+
+	rec := httptest.NewRecorder()
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(rec)
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/v1/trip-plan", bytes.NewReader(raw))
+	req.Header.Set("Content-Type", "application/json")
+	c.Request = req
+
+	handler := handlers.NewTripPlanHandler(b.db, nil, b.cfg)
+	handler.GetTripPlan(c)
+	if rec.Code != http.StatusOK {
+		return "", fmt.Errorf("trip plan status %d", rec.Code)
+	}
+
+	var resp botTripPlanResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		return "", err
+	}
+	if len(resp.Data.Options) == 0 {
+		return "", nil
+	}
+
+	loc := b.loc
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("🚆 *Route options %s → %s*:\n", escapeMarkdown(origin.Name), escapeMarkdown(dest.Name)))
+	for i, option := range resp.Data.Options {
+		if i >= 3 {
+			break
+		}
+		legs := option.Legs
+		if len(legs) == 0 {
+			continue
+		}
+		departAt, departErr := time.Parse(time.RFC3339, option.DepartAt)
+		arriveAt, arriveErr := time.Parse(time.RFC3339, option.ArriveAt)
+		if departErr != nil || arriveErr != nil {
+			continue
+		}
+		if len(legs) == 1 {
+			sb.WriteString(fmt.Sprintf("• %s → %s %s\n",
+				departAt.In(loc).Format("15:04"),
+				arriveAt.In(loc).Format("15:04"),
+				escapeMarkdown(legs[0].TrainID)))
+			continue
+		}
+
+		first := legs[0]
+		last := legs[len(legs)-1]
+		transferAt := ""
+		if len(legs) > 1 {
+			transferAt = b.stationNameOrCode(ctx, legs[0].To)
+		}
+		sb.WriteString(fmt.Sprintf("• %s → %s %s → %s via %s\n",
+			departAt.In(loc).Format("15:04"),
+			arriveAt.In(loc).Format("15:04"),
+			escapeMarkdown(first.TrainID),
+			escapeMarkdown(last.TrainID),
+			escapeMarkdown(transferAt)))
+	}
+
+	if sb.Len() == 0 {
+		return "", nil
+	}
+	if appURL := b.cfg.AppURL(); appURL != "" {
+		sb.WriteString("\n_Open /app for the full planner._")
+	}
+	return sb.String(), nil
 }
 
 // ---- DB Helpers ----
@@ -770,6 +885,17 @@ func (b *Bot) getSchedulesBetween(ctx context.Context, originCode, destCode stri
 		Limit(10).
 		Find(&schedules).Error
 	return schedules, err
+}
+
+func (b *Bot) stationNameOrCode(ctx context.Context, code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if b.db != nil {
+		var station models.Station
+		if err := b.db.WithContext(ctx).Select("name").First(&station, "id = ?", code).Error; err == nil && strings.TrimSpace(station.Name) != "" {
+			return station.Name
+		}
+	}
+	return code
 }
 
 // ---- Telegram Send Helpers ----
