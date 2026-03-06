@@ -12,14 +12,23 @@ import (
 // It returns all stations whose name or code contains the query (case-insensitive).
 func FindStation(stations []models.Station, query string) []models.Station {
 	q := normalize(query)
+	var exact []models.Station
 	var results []models.Station
 	for _, s := range stations {
 		if s.Type != "KRL" {
 			continue
 		}
-		if strings.Contains(normalize(s.Name), q) || strings.EqualFold(s.ID, q) {
+		name := normalize(s.Name)
+		if name == q || strings.EqualFold(s.ID, q) {
+			exact = append(exact, s)
+			continue
+		}
+		if strings.Contains(name, q) {
 			results = append(results, s)
 		}
+	}
+	if len(exact) > 0 {
+		return exact
 	}
 	return results
 }

@@ -13,6 +13,8 @@ func TestFindStation(t *testing.T) {
 		{UID: "depok", ID: "DP", Name: "Depok", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
 		{UID: "depok-baru", ID: "DPB", Name: "Depok Baru", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
 		{UID: "depok-timur", ID: "DPT", Name: "Depok Timur", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
+		{UID: "sudirman", ID: "SUD", Name: "Sudirman", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
+		{UID: "sudirman-baru", ID: "SUDB", Name: "Sudirman Baru", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
 		{UID: "jakarta-kota", ID: "JAKK", Name: "Jakarta Kota", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
 		{UID: "bogor", ID: "BGR", Name: "Bogor", Type: "KRL", Metadata: datatypes.JSON(`{}`)},
 		{UID: "lebak-bulus", ID: "LBB", Name: "Lebak Bulus", Type: "MRT", Metadata: datatypes.JSON(`{}`)}, // should be excluded
@@ -24,10 +26,12 @@ func TestFindStation(t *testing.T) {
 		wantLen  int
 		wantCode []string
 	}{
-		{"exact name match", "Depok", 3, []string{"DP", "DPB", "DPT"}},
+		{"exact name match", "Depok", 1, []string{"DP"}},
+		{"exact name prioritized over partials", "Sudirman", 1, []string{"SUD"}},
 		{"partial name match", "jakarta", 1, []string{"JAKK"}},
-		{"case insensitive", "depok", 3, nil},
+		{"case insensitive exact name", "depok", 1, []string{"DP"}},
 		{"code match", "BGR", 1, []string{"BGR"}},
+		{"exact code disambiguates", "SUD", 1, []string{"SUD"}},
 		{"no match", "xyz123", 0, nil},
 		{"MRT excluded", "Lebak", 0, nil},
 		{"bogor", "bogo", 1, []string{"BGR"}},
@@ -99,8 +103,8 @@ func TestIsValidTime(t *testing.T) {
 
 func TestParseWorkDays(t *testing.T) {
 	tests := []struct {
-		input   string
-		wantLen int
+		input    string
+		wantLen  int
 		wantDays []string
 	}{
 		{"mon,tue,wed,thu,fri", 5, []string{"mon", "tue", "wed", "thu", "fri"}},

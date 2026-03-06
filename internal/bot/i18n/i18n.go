@@ -162,9 +162,9 @@ func (m *Messages) MultipleStationsFound(query string, options []string) string 
 		list += fmt.Sprintf("%d. %s\n", i+1, s)
 	}
 	if m.isID() {
-		return fmt.Sprintf("🔍 Ditemukan beberapa stasiun untuk '%s':\n%s\nKetik nama lengkap stasiun yang Anda maksud.", query, list)
+		return fmt.Sprintf("🔍 Ditemukan beberapa stasiun untuk '%s':\n%s\nKetik nama stasiun yang tepat atau kode stasiun yang Anda maksud.", query, list)
 	}
-	return fmt.Sprintf("🔍 Multiple stations found for '%s':\n%s\nPlease type the exact station name you want.", query, list)
+	return fmt.Sprintf("🔍 Multiple stations found for '%s':\n%s\nPlease type the exact station name or station code you want.", query, list)
 }
 
 // NoTrains is shown when no trains are found for the time window.

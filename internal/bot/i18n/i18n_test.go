@@ -106,3 +106,10 @@ func TestSettings_ContainsFields(t *testing.T) {
 		}
 	}
 }
+
+func TestMultipleStationsFoundMentionsCodeFallback(t *testing.T) {
+	msg := New("en").MultipleStationsFound("Sudirman", []string{"Sudirman (SUD)", "Sudirman Baru (SUDB)"})
+	if !strings.Contains(msg, "code") {
+		t.Fatalf("expected ambiguity prompt to mention station code, got %q", msg)
+	}
+}
