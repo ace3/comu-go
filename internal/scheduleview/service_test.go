@@ -104,3 +104,33 @@ func TestProjectStationPage_ProjectsAndCountsSnapshotRows(t *testing.T) {
 		t.Fatalf("departs date = %s, want 2026-03-09", rows[0].DepartsAt.Format("2006-01-02"))
 	}
 }
+
+func TestProjectStationRange_ProjectsFilteredRowsWithinForwardWindow(t *testing.T) {
+	db := setupScheduleViewDB(t)
+	seedKRLData(t, db, "2026-03-03")
+	svc := New(db)
+
+	loc, _ := time.LoadLocation("Asia/Jakarta")
+	start, _ := time.ParseInLocation("2006-01-02 15:04", "2026-03-09 09:30", loc)
+	end := start.Add(60 * time.Minute)
+
+	rows, total, meta, err := svc.ProjectStationRange(context.Background(), "MRI", start, end, 1, 100)
+	if err != nil {
+		t.Fatalf("ProjectStationRange() error = %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("total = %d, want 1", total)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("rows len = %d, want 1", len(rows))
+	}
+	if !meta.Projected {
+		t.Fatalf("expected projected=true")
+	}
+	if rows[0].TrainID != "T2" {
+		t.Fatalf("train_id = %s, want T2", rows[0].TrainID)
+	}
+	if rows[0].DepartsAt.Format(time.RFC3339) != "2026-03-09T10:00:00+07:00" {
+		t.Fatalf("departs_at = %s", rows[0].DepartsAt.Format(time.RFC3339))
+	}
+}

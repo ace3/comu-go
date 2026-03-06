@@ -46,6 +46,8 @@ func NewScheduleHandler(db *gorm.DB, c *cache.Cache, cfg ...*config.Config) *Sch
 //	@Param			station_id	path		string	true	"Station ID"
 //	@Param			page		query		int		false	"Page number (default 1)"
 //	@Param			limit		query		int		false	"Results per page (default 100, max 500)"
+//	@Param			departs_after	query		string	false	"Only include departures at or after this RFC3339 timestamp"
+//	@Param			window_minutes	query		int		false	"Forward window in minutes when departs_after is set (default 120, max 120)"
 //	@Success		200			{object}	response.PaginatedResponse{data=[]models.Schedule}
 //	@Failure		500			{object}	response.Response
 //	@Failure		503			{object}	response.Response
@@ -56,9 +58,19 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 
 	stationID := c.Param("station_id")
 	page, limit := parsePagination(c)
-	cacheKey := paginationCacheKey("schedule:"+stationID, page, limit)
 
 	var cached response.PaginatedResponse
+	targetAtWIB, windowMinutes, hasForwardFilter, err := parseForwardScheduleFilter(c)
+	if err != nil {
+		response.BuildError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	cacheBase := "schedule:" + stationID
+	if hasForwardFilter {
+		cacheBase += ":after:" + targetAtWIB.Format(time.RFC3339) + ":window:" + strconv.Itoa(windowMinutes)
+	}
+	cacheKey := paginationCacheKey(cacheBase, page, limit)
 	if h.cache != nil {
 		if err := h.cache.Get(ctx, cacheKey, &cached); err == nil {
 			c.JSON(http.StatusOK, cached)
@@ -71,9 +83,21 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 		response.BuildError(c, http.StatusInternalServerError, "failed to load timezone")
 		return
 	}
-	targetAt := time.Now().In(wib)
+	if !hasForwardFilter {
+		targetAtWIB = time.Now().In(wib)
+	}
 
-	schedules, total, meta, err := h.view.ProjectStationPage(ctx, stationID, page, limit, targetAt)
+	var (
+		schedules []models.Schedule
+		total     int64
+		meta      scheduleview.ProjectionMeta
+	)
+	if hasForwardFilter {
+		rangeEnd := targetAtWIB.Add(time.Duration(windowMinutes) * time.Minute)
+		schedules, total, meta, err = h.view.ProjectStationRange(ctx, stationID, targetAtWIB, rangeEnd, page, limit)
+	} else {
+		schedules, total, meta, err = h.view.ProjectStationPage(ctx, stationID, page, limit, targetAtWIB)
+	}
 	if err != nil {
 		if ctx.Err() != nil {
 			response.BuildError(c, http.StatusServiceUnavailable, "request timeout")
@@ -101,6 +125,29 @@ func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 		_ = h.cache.Set(ctx, cacheKey, resp, cache.TTLToMidnight())
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+func parseForwardScheduleFilter(c *gin.Context) (time.Time, int, bool, error) {
+	rawAfter := strings.TrimSpace(c.Query("departs_after"))
+	if rawAfter == "" {
+		return time.Time{}, 0, false, nil
+	}
+
+	at, err := time.Parse(time.RFC3339, rawAfter)
+	if err != nil {
+		return time.Time{}, 0, false, errBadRequest("departs_after must be a valid RFC3339 timestamp")
+	}
+
+	windowMinutes := 120
+	if rawWindow := strings.TrimSpace(c.Query("window_minutes")); rawWindow != "" {
+		value, convErr := strconv.Atoi(rawWindow)
+		if convErr != nil || value < 1 || value > 120 {
+			return time.Time{}, 0, false, errBadRequest("window_minutes must be between 1 and 120 when departs_after is set")
+		}
+		windowMinutes = value
+	}
+
+	return at, windowMinutes, true, nil
 }
 
 type scheduleWindowItem struct {

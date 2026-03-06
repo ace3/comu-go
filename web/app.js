@@ -359,18 +359,27 @@ async function fetchTrainRoute(trainID) {
   return route;
 }
 
-async function fetchStationSchedules(stationID) {
-  if (stationScheduleCache.has(stationID)) {
-    return stationScheduleCache.get(stationID);
+async function fetchStationSchedules(stationID, options = {}) {
+  const departsAfter = String(options.departsAfter || "").trim();
+  const windowMinutes = Number.isFinite(options.windowMinutes) ? options.windowMinutes : 0;
+  const cacheKey = departsAfter ? `${stationID}|${departsAfter}|${windowMinutes || 120}` : stationID;
+  if (stationScheduleCache.has(cacheKey)) {
+    return stationScheduleCache.get(cacheKey);
   }
   const limit = 500;
   let page = 1;
   let total = 0;
   const schedules = [];
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (departsAfter) {
+    params.set("departs_after", departsAfter);
+    params.set("window_minutes", String(windowMinutes || 120));
+  }
 
   while (true) {
     const payload = await fetchWithTimeout(
-      `${API_BASE}/schedule/${encodeURIComponent(stationID)}?limit=${limit}&page=${page}`,
+      `${API_BASE}/schedule/${encodeURIComponent(stationID)}?${params.toString()}&page=${page}`,
     );
     const items = Array.isArray(payload?.data) ? payload.data : [];
     schedules.push(...items);
@@ -383,7 +392,7 @@ async function fetchStationSchedules(stationID) {
     page += 1;
   }
 
-  stationScheduleCache.set(stationID, schedules);
+  stationScheduleCache.set(cacheKey, schedules);
   return schedules;
 }
 
@@ -539,7 +548,10 @@ function renderTripPlans(options) {
           if (!altWrap.open || altLoaded) return;
           altLoaded = true;
           try {
-            const schedules = await fetchStationSchedules(capturedNextLeg.from);
+            const schedules = await fetchStationSchedules(capturedNextLeg.from, {
+              departsAfter: capturedNextLeg.departAt.toISOString(),
+              windowMinutes: 120,
+            });
             const topology = await loadKRLTopology().catch(() => null);
             const next = await tripPlanFormatter.findAlternateDeparture(
               schedules,

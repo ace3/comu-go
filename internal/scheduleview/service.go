@@ -109,6 +109,49 @@ func (s *Service) ProjectStationPage(ctx context.Context, stationID string, page
 	return shiftRowsToDate(rows, targetDate, s.loc), total, meta, nil
 }
 
+func (s *Service) ProjectStationRange(ctx context.Context, stationID string, targetStartWIB, targetEndWIB time.Time, page, limit int) ([]models.Schedule, int64, ProjectionMeta, error) {
+	snapshotDate, meta, err := s.ResolveSnapshot(ctx)
+	if err != nil {
+		return nil, 0, ProjectionMeta{}, err
+	}
+	if !meta.HasSnapshot {
+		return []models.Schedule{}, 0, meta, nil
+	}
+
+	stationID = strings.ToUpper(strings.TrimSpace(stationID))
+	targetStartWIB = targetStartWIB.In(s.loc)
+	targetEndWIB = targetEndWIB.In(s.loc)
+	if !targetEndWIB.After(targetStartWIB) {
+		return []models.Schedule{}, 0, meta, nil
+	}
+
+	start := toClockOnDate(targetStartWIB, snapshotDate, s.loc)
+	end := toClockOnDate(targetEndWIB, snapshotDate, s.loc)
+
+	var total int64
+	if err := s.db.WithContext(ctx).
+		Model(&models.Schedule{}).
+		Where("station_id = ? AND departs_at >= ? AND departs_at < ?", stationID, start, end).
+		Count(&total).Error; err != nil {
+		return nil, 0, ProjectionMeta{}, err
+	}
+
+	var rows []models.Schedule
+	offset := (page - 1) * limit
+	if err := s.db.WithContext(ctx).
+		Where("station_id = ? AND departs_at >= ? AND departs_at < ?", stationID, start, end).
+		Order("departs_at asc").
+		Offset(offset).
+		Limit(limit).
+		Find(&rows).Error; err != nil {
+		return nil, 0, ProjectionMeta{}, err
+	}
+
+	targetDate := dayStart(targetStartWIB, s.loc)
+	meta.Projected = !sameDay(snapshotDate, targetDate, s.loc)
+	return shiftRowsToDate(rows, targetDate, s.loc), total, meta, nil
+}
+
 func (s *Service) ProjectWindow(ctx context.Context, stationIDs []string, targetAtWIB time.Time, windowMinutes int) ([]models.Schedule, ProjectionMeta, error) {
 	snapshotDate, meta, err := s.ResolveSnapshot(ctx)
 	if err != nil {
