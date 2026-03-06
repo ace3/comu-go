@@ -1,5 +1,6 @@
 .env
 .claude
+.worktrees/
 bin/
 secrets/
 bot
