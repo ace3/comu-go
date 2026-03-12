@@ -28,6 +28,10 @@ type Config struct {
 	AutoSync                       bool
 	AdminTelegramID                int64 // Telegram user ID to notify on token events
 
+	KCIHost           string // base URL for kci.id, e.g. https://kci.id
+	CustomHeaderKey   string // optional extra request header key
+	CustomHeaderValue string // optional extra request header value
+
 	liveToken atomic.Pointer[string] // hot-reloadable token, set by RotateToken
 }
 
@@ -90,6 +94,11 @@ func Load() *Config {
 		adminID, _ = strconv.ParseInt(s, 10, 64)
 	}
 
+	kciHost := os.Getenv("KCI_HOST")
+	if kciHost == "" {
+		kciHost = "https://kci.id"
+	}
+
 	return &Config{
 		DatabaseURL:                    os.Getenv("DATABASE_URL"),
 		RedisURL:                       os.Getenv("REDIS_URL"),
@@ -106,6 +115,9 @@ func Load() *Config {
 		Timezone:                       tz,
 		AutoSync:                       autoSync == "true" || autoSync == "1",
 		AdminTelegramID:                adminID,
+		KCIHost:                        kciHost,
+		CustomHeaderKey:                os.Getenv("CUSTOM_HEADER_KEY"),
+		CustomHeaderValue:              os.Getenv("CUSTOM_HEADER_VALUE"),
 	}
 }
 

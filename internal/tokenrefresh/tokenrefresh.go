@@ -20,12 +20,15 @@ import (
 // tokenRegex matches the first JWT Bearer token embedded in the KCI page JS.
 var tokenRegex = regexp.MustCompile(`Bearer\s+(eyJ[A-Za-z0-9_\-\.]+)`)
 
-const kciPageURL = "https://kci.id/perjalanan-krl/jadwal-kereta"
-
 // FetchFromKCI fetches the KCI schedule page and extracts the hardcoded Bearer token.
 // The token is embedded directly in the page's inline JavaScript.
-func FetchFromKCI(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, kciPageURL, nil)
+// kciHost is the base URL (e.g. "https://kci.id"); defaults to "https://kci.id" if empty.
+func FetchFromKCI(ctx context.Context, kciHost string) (string, error) {
+	if kciHost == "" {
+		kciHost = "https://kci.id"
+	}
+	pageURL := strings.TrimRight(kciHost, "/") + "/perjalanan-krl/jadwal-kereta"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("tokenrefresh: build request: %w", err)
 	}
@@ -75,8 +78,8 @@ func extractTokenFromPage(body []byte) (string, error) {
 // TryRefresh fetches the latest token from KCI and, if it differs from the
 // current in-memory token, rotates it and notifies the Telegram admin.
 // Returns true if the token was rotated.
-func TryRefresh(ctx context.Context, current string, rotate func(string), botToken string, adminID int64) (bool, error) {
-	fetched, err := FetchFromKCI(ctx)
+func TryRefresh(ctx context.Context, current string, rotate func(string), botToken string, adminID int64, kciHost string) (bool, error) {
+	fetched, err := FetchFromKCI(ctx, kciHost)
 	if err != nil {
 		return false, err
 	}

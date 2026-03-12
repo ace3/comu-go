@@ -101,6 +101,7 @@ func refreshToken(ctx context.Context, cfg *config.Config) {
 		cfg.RotateToken,
 		cfg.TelegramToken,
 		cfg.AdminTelegramID,
+		cfg.KCIHost,
 	)
 	if err != nil {
 		slog.Warn("token auto-refresh failed", "error", err)

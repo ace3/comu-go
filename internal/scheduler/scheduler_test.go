@@ -37,7 +37,7 @@ func TestRefreshToken_ChecksExpiryAfterRefreshUsingEffectiveToken(t *testing.T) 
 	var checked atomic.Bool
 	cfg := &config.Config{KAIAuthToken: "stale-token"}
 
-	tryRefreshFunc = func(ctx context.Context, current string, rotate func(string), botToken string, adminID int64) (bool, error) {
+	tryRefreshFunc = func(ctx context.Context, current string, rotate func(string), botToken string, adminID int64, kciHost string) (bool, error) {
 		if current != "stale-token" {
 			t.Fatalf("TryRefresh current token = %q, want stale-token", current)
 		}
